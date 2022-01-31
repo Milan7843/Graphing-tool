@@ -1,7 +1,14 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+// Matrix math
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <iostream>
+
+#include "Shader.h"
 
 const int WIDTH = 800, HEIGHT = 600;
 
@@ -15,15 +22,6 @@ bool initialiseGLAD();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 // Processes the input
 void processInput(GLFWwindow* window);
-
-const char* vertexShaderSource = 
-"#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"void main()\n"
-"{\n"
-"  gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.);\n"
-"}\0";
-
 
 // Main function, gets called automatically
 int main()
@@ -44,11 +42,24 @@ int main()
 	// Setting the callback for window resizing
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+	//Shader shader("./src/shaders/vertexShader.shader", "./src/shaders/fragmentShader.shader");
+	Shader shader("C:/Users/Milan/Documents/CSE/Graphing-tool/Graphing-tool/Graphing-tool/src/shaders/vertexShader.shader", "C:/Users/Milan/Documents/CSE/Graphing-tool/Graphing-tool/Graphing-tool/src/shaders/fragmentShader.shader");
+	// Creating our vertex array object
+	unsigned int VAO;
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
 	// Putting the vertices into the array buffer
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f
+	  // Position            Colour
+		 0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // top right
+		 0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f, // bottom left
+		-0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 1.0f // top left 
+	};
+	unsigned int indices[] = {
+		0, 1, 3,
+		1, 2, 3
 	};
 
 	unsigned int VBO;
@@ -59,6 +70,23 @@ int main()
 	// Binding our custom data into the buffer
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+	// Binding the element buffer object
+	unsigned int EBO;
+	// Generating a buffer for the EBO
+	glGenBuffers(1, &EBO);
+	// Binding the EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	// Inserting data into the buffer
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+
+	// Telling OpenGL how to interpret the data
+	// Position data
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+
+	
 	// Render loop: runs while the window does not close
 	while (!glfwWindowShouldClose(window))
 	{
@@ -68,8 +96,43 @@ int main()
 
 		/* RENDERING */
 
-		glClearColor(0.8f, 0.0f, 1.0f, 1.0f);
+		// Drawing background
+		glClearColor(1.0f, 0.0f, 0.8f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		// Binding the shader program
+		shader.use();
+
+		// Setting uniforms
+		float time = glfwGetTime();
+
+		// Model matrix
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		shader.setMat4("model", model);
+
+		// View matrix
+		glm::mat4 view = glm::mat4(1.0f);
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		shader.setMat4("view", view);
+
+		// Projection matrix
+		glm::mat4 projection;
+		projection = glm::perspective(glm::radians(70.0f), (float)(WIDTH / HEIGHT), 0.1f, 100.0f);
+		shader.setMat4("projection", projection);
+
+
+
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+		trans = glm::rotate(trans, time/90.0f, glm::vec3(0.0, 0.0, 1.0));
+
+		// Binding the VAO
+		glBindVertexArray(VAO);
+		// Drawing
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT /* index type */, 0);
+		glBindVertexArray(0);
+
 
 		/* FINALIZING*/
 

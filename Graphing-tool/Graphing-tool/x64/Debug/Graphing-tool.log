@@ -1,2 +1,4 @@
 ﻿  main.cpp
+C:\Users\Milan\Documents\CSE\Graphing-tool\Graphing-tool\Graphing-tool\src\main.cpp(110,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
   Graphing-tool.vcxproj -> C:\Users\Milan\Documents\CSE\Graphing-tool\Graphing-tool\x64\Debug\Graphing-tool.exe
