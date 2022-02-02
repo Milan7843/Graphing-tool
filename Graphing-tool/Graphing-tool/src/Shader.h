@@ -20,6 +20,7 @@ public:
 	// Program ID
 	unsigned int ID;
 	Shader(const char* vertexPath, const char* fragmentPath);
+	Shader(std::string &function, const char* vertexPath, const char* fragmentPath);
 	~Shader();
 
 	// Activates the shader
@@ -34,6 +35,7 @@ public:
 
 private:
 	unsigned int compileShader(GLenum type, const char* code);
+	bool replace(std::string& str, const std::string& from, const std::string& to);
 };
 
 #endif
