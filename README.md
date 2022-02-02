@@ -13,3 +13,5 @@ Controls:
  - Mouse to look around
 
 Settings are inside the src/main.cpp file.
+
+Questions? -> m.f.otten@student.tudelft.nl
