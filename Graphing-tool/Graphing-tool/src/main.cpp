@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Application.cpp"
+#include "Application.h"
 
 /* CONTROLS */
 /*
@@ -15,14 +15,12 @@
  - Mouse to look around
 */
 
-//#include <iostream>
-
 // Window size
 const int WIDTH = 1200, HEIGHT = 900;
 
 // The input function, can use variables x, z and regular glsl functions
 std::string function(
-	"x+z"
+	"sin(x*z) + cos(x+z)"
 );
 
 
