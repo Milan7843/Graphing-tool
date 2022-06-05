@@ -104,7 +104,6 @@ Shader::Shader(std::string &function, const char* vertexPath, const char* fragme
 		std::cout << "Error: shader file not correctly read." << std::endl;
 	}
 	std::cout << replace(vertexCode, "$function", function);
-	std::cout << vertexCode;
 	const char* vShaderCode = vertexCode.c_str();
 	const char* fShaderCode = fragmentCode.c_str();
 
