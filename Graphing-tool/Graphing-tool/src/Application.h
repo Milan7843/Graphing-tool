@@ -36,7 +36,7 @@ private:
 	float deltaTime = 0.0f;	// Time between current frame and last frame
 	float lastFrame = 0.0f; // Time of last frame
 
-	float scale = 1.0f;
+	float scale = 3.0f;
 
 	// Initialises and configures GLFW
 	void initialiseGLFW();

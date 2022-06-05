@@ -32,6 +32,7 @@ int Application::Start()
 
 	// Setting the callback for window resizing
 	Callbacks& callbacks = Callbacks::getInstance();
+	callbacks.setCamera(&camera);
 
 	glfwSetFramebufferSizeCallback(window, &Callbacks::framebuffer_size_callback);
 
@@ -66,9 +67,6 @@ int Application::Start()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	// Inserting data into the buffer
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	delete[] vertices;
-	delete[] indices;
 
 	// Telling OpenGL how to interpret the data
 	// Position data
@@ -137,6 +135,7 @@ int Application::Start()
 		calculatorShader.setBool("edgeMode", false);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawElements(GL_TRIANGLES, (size - 1) * (size - 1) * 6, GL_UNSIGNED_INT /* index type */, 0);
+
 		// Drawing edges
 		calculatorShader.setBool("edgeMode", true);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
