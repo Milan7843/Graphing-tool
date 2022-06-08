@@ -25,6 +25,9 @@ public:
 	// Callback for when the mouse is moved
 	void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 
+	// Don't use the current mouse offset, but start from where the cursor is
+	void resetMouseOffset();
+
 	/* Private members */
 private:
 	// Camera postion data

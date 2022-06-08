@@ -33,11 +33,10 @@ int Application::Start()
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsClassic();
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init("#version 330");
+	ImGui_ImplOpenGL3_Init("#version 130");
 
 	// Initialising GLAD
 	if (!initialiseGLAD()) return -1;
@@ -50,10 +49,11 @@ int Application::Start()
 	callbacks.setCamera(&camera);
 
 	glfwSetFramebufferSizeCallback(window, &Callbacks::framebuffer_size_callback);
-
+	
 	//Shader shader("./src/shaders/vertexShader.shader", "./src/shaders/fragmentShader.shader");
 	Shader shader("src/shaders/vertexShader.shader", "src/shaders/fragmentShader.shader");
 	Shader calculatorShader(function, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader");
+
 	// Creating our vertex array object
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
@@ -91,23 +91,36 @@ int Application::Start()
 	unsigned int axesVAO = generateAxesVAO();
 
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPosCallback(window, &Callbacks::mouseCallback);
-
 	// ImGui state
 	bool show_demo_window = true;
 	bool show_another_window = false;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+	float timeSinceGuiSwitch = 10.0f;
+	unsigned int guiSwitchKeyPreviousState = 0;
+	bool imGuiEnabled = true;
+
 	// Render loop: runs while the window does not close
 	while (!glfwWindowShouldClose(window))
 	{
+		// Checking for event input
+		glfwPollEvents();
+
+		// Only move the camera if the GUI is not enabled
+		if (!imGuiEnabled)
+		{
+			double xpos, ypos;
+			glfwGetCursorPos(window, &xpos, &ypos);
+			camera.mouseCallback(window, xpos, ypos);
+		}
+		
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 		/* Input handling */
-
+		
 		camera.processInput(window, deltaTime);
+		
 		// Scale adjustment
 		if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
 			scale += scrollSens * deltaTime;
@@ -118,44 +131,66 @@ int Application::Start()
 		if (scale > 10.0f)
 			scale = 10.0f;
 
-		/* RENDERING */
+		// Enable/disable the ImGui GUI on key switch
+		if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && guiSwitchKeyPreviousState == GLFW_RELEASE)
+		{
+			imGuiEnabled = !imGuiEnabled;
 
+			// If the GUI is enabled, 
+			if (imGuiEnabled)
+			{
+				// free the mouse
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			}
+			// Otherwise,
+			else
+			{
+				// Lock the mouse
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				// Reset offset (the mouse may have moved which should not be registered as camera movement)
+				camera.resetMouseOffset();
+			}
+		}
+		guiSwitchKeyPreviousState = glfwGetKey(window, GLFW_KEY_F);
+		
+		/* RENDERING */
+		
 		// Drawing background
 		glClearColor(0.09f, 0.05f, 0.11, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		
 		// Drawing axes
 		drawAxes(axesVAO, &shader, &camera);
-
+		
 		// Binding the shader program
 		calculatorShader.use();
-
+		
 		// Setting uniforms
 		float time = glfwGetTime();
-
+		
 		calculatorShader.setFloat("scale", scale);
-
+		
 		// Model matrix
 		glm::mat4 model = glm::mat4(1.0f);
 		calculatorShader.setMat4("model", model);
-
+		
 		// View matrix
 		glm::mat4 view = glm::mat4(1.0f);
 		view = camera.getViewMatrix();
 		calculatorShader.setMat4("view", view);
-
+		
 		// Projection matrix
 		glm::mat4 projection;
 		projection = camera.getProjectionMatrix(WIDTH, HEIGHT);
 		calculatorShader.setMat4("projection", projection);
-
+		
 		// Binding the VAO
 		glBindVertexArray(VAO);
 		// Drawing with colour
 		calculatorShader.setBool("edgeMode", false);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawElements(GL_TRIANGLES, (size - 1) * (size - 1) * 6, GL_UNSIGNED_INT /* index type */, 0);
-
+		
 		// Drawing edges
 		calculatorShader.setBool("edgeMode", true);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -164,40 +199,36 @@ int Application::Start()
 		glBindVertexArray(0);
 
 
-		/* FINALIZING*/
-
+		/* FINALIZING */
+		
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-
-		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-		if (show_demo_window)
-			ImGui::ShowDemoWindow(&show_demo_window);
-
-		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+		
+		if (imGuiEnabled)
 		{
 			static float f = 0.0f;
 			static int counter = 0;
-
+		
 			ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
+		
 			ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 			ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 			ImGui::Checkbox("Another Window", &show_another_window);
-
+		
 			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 			ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
+		
 			if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
 				counter++;
 			ImGui::SameLine();
 			ImGui::Text("counter = %d", counter);
-
+		
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
-
+		
 		// 3. Show another simple window.
 		if (show_another_window)
 		{
@@ -207,20 +238,24 @@ int Application::Start()
 				show_another_window = false;
 			ImGui::End();
 		}
-
+		
 		// Rendering
 		ImGui::Render();
-		int display_w, display_h;
-		glfwGetFramebufferSize(window, &display_w, &display_h);
-		glViewport(0, 0, display_w, display_h);
+		//int display_w, display_h;
+		//glfwGetFramebufferSize(window, &display_w, &display_h);
+		//glViewport(0, 0, display_w, display_h);
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
+		
 		// Showing the current color buffer to the screen
 		glfwSwapBuffers(window);
-		// Checking for event input
-		glfwPollEvents();
 	}
+
+
+	// ImGui cleanup
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
 	// Terminating GLFW
 	glfwTerminate();
@@ -236,7 +271,7 @@ void Application::initialiseGLFW()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	// OpenGL profile: core
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
 void Application::generateGrid(float in[], int x, int y)

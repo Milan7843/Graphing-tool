@@ -72,6 +72,11 @@ void Camera::mouseCallback(GLFWwindow* window, double xpos, double ypos)
 	forward = glm::normalize(direction);
 }
 
+void Camera::resetMouseOffset()
+{
+	firstMouse = true;
+}
+
 // Processes the input
 void Camera::processInput(GLFWwindow* window, float deltaTime)
 {
