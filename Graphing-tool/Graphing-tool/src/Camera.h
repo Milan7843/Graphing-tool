@@ -33,6 +33,10 @@ public:
 	float getPitch();
 	float getYaw();
 
+	float* getCameraSpeedPointer();
+	float* getFovPointer();
+	float* getSensitivityPointer();
+
 	/* Private members */
 private:
 	// Camera postion data
@@ -42,5 +46,7 @@ private:
 	float lastx = 400, lasty = 300;
 	float yaw = 35.0f, pitch = -30.0f;
 	bool firstMouse = true;
-	const float cameraSpeed = 1.0f;
+	float fov = 40.0f;
+	float sensitivity = 1.0f;
+	float cameraSpeed = 1.0f;
 };

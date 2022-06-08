@@ -9,8 +9,14 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform float scale;
 uniform float graphWidth;
+uniform vec3 upperColor;
+uniform vec3 lowerColor;
 
 float calculate(float x, float z);
+
+// Constants
+#define pi 3.14159265359
+#define e 2.71828182846
 
 void main()
 {
@@ -20,11 +26,12 @@ void main()
 	{
 		float yt = (y + 1.0) / 2.0;
 		vertexColor = vec4(yt*1.2, 0.0, (1.0 - yt)*1.2, 1.);
+		vertexColor = vec4((yt * upperColor + (1-yt) * lowerColor) * 1.2, 1.);
 	}
 	else
 	{
 		float yt = (y + 1.0) / 2.0;
-		vertexColor = vec4(yt, 0.0, 1.0 - yt, 1.);
+		vertexColor = vec4((yt * upperColor + (1 - yt) * lowerColor), 1.);
 	}
 }
 

@@ -32,7 +32,7 @@ glm::mat4 Camera::getViewMatrix()
 }
 glm::mat4 Camera::getProjectionMatrix(int width, int height)
 {   //                           cam pos,  target,            up vector
-	glm::mat4 projection = glm::perspective(glm::radians(40.0f), (float)width / (float)height, 0.01f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.01f, 100.0f);
 	return projection;
 }
 
@@ -52,9 +52,8 @@ void Camera::mouseCallback(GLFWwindow* window, double xpos, double ypos)
 	lastx = xpos;
 	lasty = ypos;
 
-	const float sensitivity = 0.1f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
+	xoffset *= sensitivity * 0.1f;
+	yoffset *= sensitivity * 0.1f;
 
 	// Applying rotation
 	yaw += xoffset;
@@ -90,6 +89,21 @@ float Camera::getPitch()
 float Camera::getYaw()
 {
 	return yaw;
+}
+
+float* Camera::getCameraSpeedPointer()
+{
+	return &cameraSpeed;
+}
+
+float* Camera::getFovPointer()
+{
+	return &fov;
+}
+
+float* Camera::getSensitivityPointer()
+{
+	return &sensitivity;
 }
 
 // Processes the input

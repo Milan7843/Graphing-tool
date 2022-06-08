@@ -10,8 +10,7 @@
  - D to move right
  - E to move up
  - Q to move down
- - Z to increase the scale
- - X to decrease the scale
+ - F to enable/disable settings and info menu
  - Mouse to look around
 */
 
@@ -20,7 +19,7 @@ const int WIDTH = 1200, HEIGHT = 900;
 
 // The input function, can use variables x, z and regular glsl functions
 std::string function(
-	"sin(x*z) + cos(x+z)"
+	"sin(x*z)/1.4 + cos((x+z)/2)"
 );
 
 

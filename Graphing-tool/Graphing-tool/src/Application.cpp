@@ -14,6 +14,12 @@ Application::~Application()
 {
 }
 
+// Convert ImGui format vec4 to glm format vec3
+glm::vec3 imGuiVec4ToGlmVec3(ImVec4 vec4)
+{
+	return glm::vec3(vec4.x, vec4.y, vec4.z);
+}
+
 int Application::Start()
 {
 	// Initialising and configuring GLFW
@@ -97,7 +103,9 @@ int Application::Start()
 	std::string functionInput{ function };
 
 	float timeSinceGuiSwitch = 10.0f;
-	float graphWidth = 1.0f;
+
+	// Custom settings
+	float graphWidth = 1.4f;
 	unsigned int guiSwitchKeyPreviousState = 0;
 	bool imGuiEnabled = true;
 	bool showAdditionalInfo = false;
@@ -105,6 +113,17 @@ int Application::Start()
 	// View modes
 	bool smoothMesh = false;
 	bool wireframe = false;
+
+	// Function input error log
+	bool functionError = false;
+	bool additionalFunctionErrorInfo = false;
+	std::string functionErrorMessage = "";
+
+	// Color customisation
+	ImVec4 clearColor(0.09f, 0.05f, 0.11f, 1.0f);
+	ImVec4 upperColor(0.0f, 0.0f, 1.0f, 1.0f);
+	ImVec4 lowerColor(1.0f, 0.0f, 0.0f, 1.0f);
+
 
 	// Render loop: runs while the window does not close
 	while (!glfwWindowShouldClose(window))
@@ -166,7 +185,7 @@ int Application::Start()
 		/* RENDERING */
 		
 		// Drawing background
-		glClearColor(0.09f, 0.05f, 0.11, 1.0f);
+		glClearColor(clearColor.x * clearColor.w, clearColor.y * clearColor.w, clearColor.z * clearColor.w, clearColor.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		// Drawing axes
@@ -180,6 +199,8 @@ int Application::Start()
 		
 		calculatorShader.setFloat("scale", scale);
 		calculatorShader.setFloat("graphWidth", graphWidth);
+		calculatorShader.setVector3("upperColor", imGuiVec4ToGlmVec3(upperColor));
+		calculatorShader.setVector3("lowerColor", imGuiVec4ToGlmVec3(lowerColor));
 		
 		// Model matrix
 		glm::mat4 model = glm::mat4(1.0f);
@@ -238,36 +259,76 @@ int Application::Start()
 			ImGui::InputText("Function", &functionInput);
 			if (ImGui::Button("Set function"))
 			{
-				Shader _calculatorShader(functionInput, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader");
-				calculatorShader = _calculatorShader;
+				try
+				{
+					Shader _calculatorShader(functionInput, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader");
+					calculatorShader = _calculatorShader;
+				}
+				catch (std::exception e)
+				{
+					functionError = true;
+					// Convert to string in order to preserve it
+					functionErrorMessage = std::string(e.what());
+				}
+			}
+
+			// Function error
+			if (functionError)
+			{
+				// Generic error message
+				ImGui::TextColored(ImVec4(0.8f, 0.15f, 0.15f, 1.0f), "Function error!");
+
+				// Showing more info
+				if (ImGui::CollapsingHeader("Additional error information"))
+				{
+					ImGui::Text(functionErrorMessage.c_str());
+				}
+				if (ImGui::Button("Close error"))
+				{
+					functionError = false;
+				}
 			}
 
 			// Information about the possible functions
 			if (ImGui::CollapsingHeader("Function help"))
 			{
-				ImGui::Text("Possible functions:");
-				ImGui::BulletText("sin(x) -> sine of x");
-				ImGui::BulletText("cos(x) -> cosine of x");
-				ImGui::BulletText("tan(x) -> tangent of x");
-				ImGui::BulletText("asin(x) -> arcsine of x");
-				ImGui::BulletText("acos(x) -> arccosine of x");
-				ImGui::BulletText("atan(x) -> arctangent of x");
-				ImGui::BulletText("exp(x) -> e to the power x");
+				ImGui::Text("Available functions:");
+				ImGui::BulletText("sin(x)    -> sine of x");
+				ImGui::BulletText("cos(x)    -> cosine of x");
+				ImGui::BulletText("tan(x)    -> tangent of x");
+				ImGui::BulletText("asin(x)   -> arcsine of x");
+				ImGui::BulletText("acos(x)   -> arccosine of x");
+				ImGui::BulletText("atan(x)   -> arctangent of x");
+				ImGui::BulletText("exp(x)    -> e to the power x");
 				ImGui::BulletText("pow(x, z) -> x to the power z");
-				ImGui::BulletText("sqrt(x) -> square root of x");
-				ImGui::BulletText("abs(x) -> absolute value of x");
-				ImGui::BulletText("floor(x) -> floor of x (round down)");
-				ImGui::BulletText("ceil(x) -> ceil of x (round up)");
+				ImGui::BulletText("sqrt(x)   -> square root of x");
+				ImGui::BulletText("abs(x)    -> absolute value of x");
+				ImGui::BulletText("floor(x)  -> floor of x (round down)");
+				ImGui::BulletText("ceil(x)   -> ceil of x (round up)");
 				ImGui::BulletText("min(x, z) -> minimum of x and z");
 				ImGui::BulletText("max(x, z) -> maximum of x and z");
 
-				ImGui::Text("Use variables x and z for inputs.");
-				ImGui::Text("You can also use these operators:");
+				ImGui::Separator();
+
+				ImGui::Text("Available operators:");
 				ImGui::BulletText("+ for addition");
 				ImGui::BulletText("- for subtraction");
 				ImGui::BulletText("/ for division");
 				ImGui::BulletText("* for multiplication");
+
+				ImGui::Separator();
+
+				ImGui::Text("Available constants:");
+				ImGui::BulletText("pi");
+				ImGui::BulletText("e");
+
+				ImGui::Separator();
+
+				ImGui::Text("Use variables x and z for inputs.");
 				ImGui::Text("x is represented by the red axis, z by the blue axis.");
+				ImGui::Text("All trigonometric functions \ntake radians as input/output.");
+
+				ImGui::Separator();
 			}
 
 
@@ -292,24 +353,46 @@ int Application::Start()
 					showAdditionalInfo = false;
 				}
 
+				// Graph bounds
 				std::string bounds = std::to_string(scale * graphWidth);
 				std::string boundsInfo = "Current bounds:\nx: [-" + bounds + ", " + bounds + "], z: [-" + bounds + ", " + bounds + "]";
+				ImGui::Text(boundsInfo.c_str());
+
+				// Camera position
 				std::string cameraPosition = "Camera position: ("
 					+ std::to_string(camera.getPosition().x) + ", "
 					+ std::to_string(camera.getPosition().y) + ", "
 					+ std::to_string(camera.getPosition().z) + ")";
+				ImGui::Text(cameraPosition.c_str());
+
+				// Camera rotation
 				std::string cameraRotation = "Camera pitch: "
 					+ std::to_string(camera.getPitch()) + ", yaw: " + std::to_string(camera.getYaw());
-				ImGui::Text(boundsInfo.c_str());
-				ImGui::Text(cameraPosition.c_str());
 				ImGui::Text(cameraRotation.c_str());
 			}
 			else
 			{
+				// Button to show additionial information (camera position/rotation and more)
 				if (ImGui::Button("Show additional information"))
 				{
 					showAdditionalInfo = true;
 				}
+			}
+
+			// Camera settings (speed, fov etc.)
+			if (ImGui::CollapsingHeader("Camera settings"))
+			{
+				ImGui::SliderFloat("Move speed", camera.getCameraSpeedPointer(), 0.1f, 10.0f);
+				ImGui::SliderFloat("Sensitivity", camera.getSensitivityPointer(), 0.1f, 5.0f);
+				ImGui::SliderFloat("Field of view", camera.getFovPointer(), 10.0f, 90.0f);
+			}
+
+			// Customisation of the program (colors etc.)
+			if (ImGui::CollapsingHeader("Customisation"))
+			{
+				ImGui::ColorEdit3("Background colour", (float*)&clearColor);
+				ImGui::ColorEdit3("Upper graph colour", (float*)&upperColor);
+				ImGui::ColorEdit3("Lower graph colour", (float*)&lowerColor);
 			}
 
 			ImGui::End();
