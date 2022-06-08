@@ -31,7 +31,7 @@ public:
 	/* Private members */
 private:
 	// Camera postion data
-	glm::vec3 position = glm::vec3(-2.0f, 2.0f, 0.0f);
+	glm::vec3 position = glm::vec3(-1.0f, 1.0f, 0.0f);
 	glm::vec3 up;
 	glm::vec3 forward;
 	float lastx = 400, lasty = 300;

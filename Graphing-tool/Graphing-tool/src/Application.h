@@ -11,6 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
+#include <vector>
 
 #include "Shader.h"
 #include "Camera.h"
@@ -25,6 +26,8 @@
 #include <GLES2/gl2.h>
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
+
+#include "imgui/imgui_stdlib.h"
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -71,8 +74,8 @@ private:
 	unsigned int generateAxesVAO();
 
 	// Modifies the input array such that it is a grid
-	void generateGrid(float in[], int x, int y);
-	void generateGridIndices(unsigned int in[], int x, int y);
+	void generateGrid(std::vector<float>* vertices, int x, int y);
+	void generateGridIndices(std::vector<unsigned int>* indices, int x, int y);
 };
 
 #endif

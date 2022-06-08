@@ -8,13 +8,14 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform float scale;
+uniform float graphWidth;
 
 float calculate(float x, float z);
 
 void main()
 {
 	float y = calculate(aPos.x, aPos.z)/scale;
-	gl_Position = projection * view * model * vec4(aPos.x, y, aPos.z, 1.0);
+	gl_Position = projection * view * model * vec4(aPos.x * graphWidth, y, aPos.z * graphWidth, 1.0);
 	if (edgeMode)
 	{
 		float yt = (y + 1.0) / 2.0;
@@ -29,7 +30,7 @@ void main()
 
 float calculate(float x, float z)
 {
-	x = x * scale;
-	z = z * scale;
+	x = x * scale * graphWidth;
+	z = z * scale * graphWidth;
 	return $function;
 }

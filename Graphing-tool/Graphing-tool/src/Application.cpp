@@ -59,29 +59,30 @@ int Application::Start()
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
+	const int size = 400;
+	{
+		std::vector<float> vertices(size * size * 3);
+		generateGrid(&vertices, size, size);
+		std::vector<unsigned int> indices((size - 1) * (size - 1) * 6);
+		generateGridIndices(&indices, size, size);
 
-	const int size = 100;
-	float vertices[size * size * 3];
-	generateGrid(vertices, size, size);
-	unsigned int indices[(size - 1) * (size - 1) * 6];
-	generateGridIndices(indices, size, size);
+		unsigned int VBO;
+		// Making a buffer with the ID in VBO
+		glGenBuffers(1, &VBO);
+		// Binding our new buffer to the GL_ARRAY_BUFFER target
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		// Binding our custom data into the buffer
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
 
-	unsigned int VBO;
-	// Making a buffer with the ID in VBO
-	glGenBuffers(1, &VBO);
-	// Binding our new buffer to the GL_ARRAY_BUFFER target
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	// Binding our custom data into the buffer
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// Binding the element buffer object
-	unsigned int EBO;
-	// Generating a buffer for the EBO
-	glGenBuffers(1, &EBO);
-	// Binding the EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	// Inserting data into the buffer
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+		// Binding the element buffer object
+		unsigned int EBO;
+		// Generating a buffer for the EBO
+		glGenBuffers(1, &EBO);
+		// Binding the EBO
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		// Inserting data into the buffer
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+	}
 
 	// Telling OpenGL how to interpret the data
 	// Position data
@@ -92,13 +93,13 @@ int Application::Start()
 
 
 	// ImGui state
-	bool show_demo_window = true;
-	bool show_another_window = false;
-	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	std::string functionInput{ function };
 
 	float timeSinceGuiSwitch = 10.0f;
+	float graphWidth = 1.0f;
 	unsigned int guiSwitchKeyPreviousState = 0;
 	bool imGuiEnabled = true;
+	bool showAdditionalInfo = false;
 
 	// Render loop: runs while the window does not close
 	while (!glfwWindowShouldClose(window))
@@ -112,14 +113,18 @@ int Application::Start()
 			double xpos, ypos;
 			glfwGetCursorPos(window, &xpos, &ypos);
 			camera.mouseCallback(window, xpos, ypos);
+
+			// Also input handling
+			camera.processInput(window, deltaTime);
 		}
 		
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-		/* Input handling */
-		
-		camera.processInput(window, deltaTime);
+
+		// Always check for window close on escape
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+			glfwSetWindowShouldClose(window, true);
 		
 		// Scale adjustment
 		if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
@@ -169,6 +174,7 @@ int Application::Start()
 		float time = glfwGetTime();
 		
 		calculatorShader.setFloat("scale", scale);
+		calculatorShader.setFloat("graphWidth", graphWidth);
 		
 		// Model matrix
 		glm::mat4 model = glm::mat4(1.0f);
@@ -206,36 +212,43 @@ int Application::Start()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		
+		// Creating the GUI window
 		if (imGuiEnabled)
-		{
-			static float f = 0.0f;
-			static int counter = 0;
+		{		
+			ImGui::Begin("Graphing settings");
 		
-			ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-		
-			ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-			ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-			ImGui::Checkbox("Another Window", &show_another_window);
-		
-			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-			ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-		
-			if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-				counter++;
-			ImGui::SameLine();
-			ImGui::Text("counter = %d", counter);
-		
-			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::End();
-		}
-		
-		// 3. Show another simple window.
-		if (show_another_window)
-		{
-			ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-			ImGui::Text("Hello from another window!");
-			if (ImGui::Button("Close Me"))
-				show_another_window = false;
+			ImGui::Text("Press F to return to graph view, \nwhere you can look around.");
+
+			ImGui::InputText("Text", &functionInput);
+			if (ImGui::Button("Set function"))
+			{
+				Shader _calculatorShader(functionInput, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader");
+				calculatorShader = _calculatorShader;
+			}
+
+			ImGui::SliderFloat("Scale", &scale, 0.1f, 10.0f);
+			ImGui::SliderFloat("Graph width", &graphWidth, 0.1f, 10.0f);
+
+			// Additional information
+			if (showAdditionalInfo)
+			{
+				if (ImGui::Button("Hide additional information"))
+				{
+					showAdditionalInfo = false;
+				}
+
+				std::string bounds = std::to_string(scale * graphWidth);
+				std::string bounds_info = "Current bounds:\nx: [-" + bounds + ", " + bounds + "], z: [-" + bounds + ", " + bounds + "] ";
+				ImGui::Text(bounds_info.c_str());
+			}
+			else
+			{
+				if (ImGui::Button("Show additional information"))
+				{
+					showAdditionalInfo = true;
+				}
+			}
+
 			ImGui::End();
 		}
 		
@@ -244,7 +257,6 @@ int Application::Start()
 		//int display_w, display_h;
 		//glfwGetFramebufferSize(window, &display_w, &display_h);
 		//glViewport(0, 0, display_w, display_h);
-		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		
 		// Showing the current color buffer to the screen
@@ -274,7 +286,7 @@ void Application::initialiseGLFW()
 	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
-void Application::generateGrid(float in[], int x, int y)
+void Application::generateGrid(std::vector<float>* vertices, int x, int y)
 {
 	float xoffset = 2.0f / (float)(x - 1);
 	float yoffset = 2.0f / (float)(y - 1);
@@ -283,12 +295,12 @@ void Application::generateGrid(float in[], int x, int y)
 		int cx = i % y;
 		int cy = i / x;
 
-		in[i * 3 + 0] = cx * xoffset - 1.0f; // x
-		in[i * 3 + 1] = 0.0f; // y
-		in[i * 3 + 2] = cy * yoffset - 1.0f; // z
+		vertices->at(i * 3 + 0) = (cx * xoffset - 1.0f); // x
+		vertices->at(i * 3 + 1) = 0.0f; // y
+		vertices->at(i * 3 + 2) = (cy * yoffset - 1.0f); // z
 	}
 }
-void Application::generateGridIndices(unsigned int in[], int x, int y)
+void Application::generateGridIndices(std::vector<unsigned int>* indices, int x, int y)
 {
 	for (int i = 0; i < (x - 1) * (y - 1); i++)
 	{
@@ -298,13 +310,13 @@ void Application::generateGridIndices(unsigned int in[], int x, int y)
 		// 0 1
 		// 2 3
 		// Right tri: 0 1 3
-		in[i * 6 + 0] = cx + cy * x; // 0
-		in[i * 6 + 1] = cx + cy * x + 1; // 1
-		in[i * 6 + 2] = cx + cy * x + x + 1; // 3
+		indices->at(i * 6 + 0) = cx + cy * x; // 0
+		indices->at(i * 6 + 1) = cx + cy * x + 1; // 1
+		indices->at(i * 6 + 2) = cx + cy * x + x + 1; // 3
 		// Left tri: 0 3 2
-		in[i * 6 + 3] = cx + cy * x; // 0
-		in[i * 6 + 4] = cx + cy * x + x + 1; // 3
-		in[i * 6 + 5] = cx + cy * x + x; // 2
+		indices->at(i * 6 + 3) = cx + cy * x; // 0
+		indices->at(i * 6 + 4) = cx + cy * x + x + 1; // 3
+		indices->at(i * 6 + 5) = cx + cy * x + x; // 2
 	}
 }
 
@@ -347,8 +359,8 @@ unsigned int Application::generateAxesVAO()
 	// Putting the vertices into the array buffer
 	float vertices[] = {
 		// Position
-	   -1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f
+	   -1000.0f, 0.0f, 0.0f,
+		1000.0f, 0.0f, 0.0f
 	};
 	unsigned int indices[] = {
 		0, 1
