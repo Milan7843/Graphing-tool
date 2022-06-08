@@ -1,0 +1,21 @@
+﻿  imgui_impl_glfw.cpp
+  glm.cpp
+  Application.cpp
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Application.cpp(148,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Application.cpp(191,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  Camera.cpp
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Camera.cpp(45,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Camera.cpp(46,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Camera.cpp(50,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Camera.cpp(51,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Camera.cpp(52,10): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Camera.cpp(53,10): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  main.cpp
+  Shader.cpp
+  Callbacks.cpp
+  glad.c
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 1906 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Graphing-tool.vcxproj -> I:\Graphing-tool\Graphing-tool\x64\Release\Graphing-tool.exe

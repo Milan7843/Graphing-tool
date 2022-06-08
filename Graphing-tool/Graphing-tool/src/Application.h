@@ -41,7 +41,7 @@
 class Application
 {
 public:
-	Application(const int width, const int height, std::string function, const float scrollSens);
+	Application(const int width, const int height, std::string function);
 	~Application();
 
 	// Starts the program
@@ -52,7 +52,6 @@ private:
 	const int WIDTH;
 	const int HEIGHT;
 	std::string function;
-	const float scrollSens;
 
 	float deltaTime = 0.0f;	// Time between current frame and last frame
 	float lastFrame = 0.0f; // Time of last frame

@@ -1,9 +1,8 @@
 #include "Application.h"
 
-Application::Application(const int width, const int height, std::string function, const float scrollSens)
+Application::Application(const int width, const int height, std::string function)
 	: WIDTH(width), HEIGHT(height),
 	function(function),
-	scrollSens(scrollSens),
 
 	// Making a camera
 	camera(glm::vec3(-3.0f, 2.0f, -2.0f))
@@ -59,7 +58,7 @@ int Application::Start()
 	
 	//Shader shader("./src/shaders/vertexShader.shader", "./src/shaders/fragmentShader.shader");
 	Shader shader("src/shaders/vertexShader.shader", "src/shaders/fragmentShader.shader");
-	Shader calculatorShader(function, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader");
+	Shader calculatorShader(function, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader", false);
 
 	// Creating our vertex array object
 	unsigned int VAO;
@@ -106,6 +105,7 @@ int Application::Start()
 
 	// Custom settings
 	float graphWidth = 1.4f;
+	float verticalScale = 1.0f;
 	unsigned int guiSwitchKeyPreviousState = 0;
 	bool imGuiEnabled = true;
 	bool showAdditionalInfo = false;
@@ -113,6 +113,9 @@ int Application::Start()
 	// View modes
 	bool smoothMesh = false;
 	bool wireframe = false;
+
+	// Calculation mode
+	int calculationMode = 0;
 
 	// Function input error log
 	bool functionError = false;
@@ -188,6 +191,7 @@ int Application::Start()
 		float time = glfwGetTime();
 		
 		calculatorShader.setFloat("scale", scale);
+		calculatorShader.setFloat("verticalScale", verticalScale);
 		calculatorShader.setFloat("graphWidth", graphWidth);
 		calculatorShader.setVector3("upperColor", imGuiVec4ToGlmVec3(upperColor));
 		calculatorShader.setVector3("lowerColor", imGuiVec4ToGlmVec3(lowerColor));
@@ -228,6 +232,8 @@ int Application::Start()
 			glDrawElements(GL_TRIANGLES, (size - 1) * (size - 1) * 6, GL_UNSIGNED_INT /* index type */, 0);
 		}
 
+		calculatorShader.setInt("calculationMode", calculationMode);
+
 		// Unbinding vertex array
 		glBindVertexArray(0);
 
@@ -251,7 +257,7 @@ int Application::Start()
 			{
 				try
 				{
-					Shader _calculatorShader(functionInput, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader");
+					Shader _calculatorShader(functionInput, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader", true);
 					calculatorShader = _calculatorShader;
 				}
 				catch (std::exception e)
@@ -321,10 +327,11 @@ int Application::Start()
 				ImGui::Separator();
 			}
 
-
-
+			// Graph settings
 			ImGui::SliderFloat("Scale", &scale, 0.1f, 10.0f);
+			ImGui::SliderFloat("Vertical scale", &verticalScale, 0.1f, 10.0f);
 			ImGui::SliderFloat("Graph width", &graphWidth, 0.1f, 10.0f);
+
 			if (ImGui::Button(smoothMesh ? "Disable smooth mode" : "Enable smooth mode"))
 			{
 				smoothMesh = !smoothMesh;
@@ -368,6 +375,11 @@ int Application::Start()
 					showAdditionalInfo = true;
 				}
 			}
+
+			ImGui::Text("Calculation mode");
+			ImGui::RadioButton("Regular", &calculationMode, 0);
+			ImGui::RadioButton("Derivative", &calculationMode, 1);
+			//ImGui::RadioButton("Integral", &calculationMode, 2);
 
 			// Camera settings (speed, fov etc.)
 			if (ImGui::CollapsingHeader("Camera settings"))

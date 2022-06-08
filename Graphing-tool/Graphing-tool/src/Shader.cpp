@@ -68,7 +68,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 	glDeleteShader(fragment);
 }
 
-Shader::Shader(std::string &function, const char* vertexPath, const char* fragmentPath)
+Shader::Shader(std::string &function, const char* vertexPath, const char* fragmentPath, bool throwError)
 {
 	/* Retrieving the shader data from the files */
 
@@ -129,8 +129,15 @@ Shader::Shader(std::string &function, const char* vertexPath, const char* fragme
 	if (!success)
 	{
 		glGetProgramInfoLog(ID, 512, NULL, infoLog);
-		//std::cout << "Error: shader program linking failed.\n" << infoLog << std::endl;
-		throw std::exception(infoLog);
+		if (throwError)
+		{
+			throw std::exception(infoLog);
+		}
+		else
+		{
+			std::cout << "Error: shader program linking failed.\n" << infoLog << std::endl;
+			return;
+		}
 	}
 
 	// delete the shaders as they're linked into our program now and no longer necessary
@@ -146,9 +153,11 @@ Shader::~Shader()
 bool Shader::replace(std::string& str, const std::string& from, const std::string& to)
 {
 	size_t start_pos = str.find(from);
-	if (start_pos == std::string::npos)
-		return false;
-	str.replace(start_pos, from.length(), to);
+	while (start_pos != std::string::npos)
+	{
+		str.replace(start_pos, from.length(), to);
+		start_pos = str.find(from);
+	}
 	return true;
 }
 

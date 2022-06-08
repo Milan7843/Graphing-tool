@@ -9,18 +9,21 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform float scale;
 uniform float graphWidth;
+uniform float verticalScale;
 uniform vec3 upperColor;
 uniform vec3 lowerColor;
+uniform int calculationMode;
 
 float calculate(float x, float z);
 
 // Constants
 #define pi 3.14159265359
 #define e 2.71828182846
+#define epsilon 0.001
 
 void main()
 {
-	float y = calculate(aPos.x, aPos.z)/scale;
+	float y = calculate(aPos.x, aPos.z) / scale * verticalScale;
 	gl_Position = projection * view * model * vec4(aPos.x * graphWidth, y, aPos.z * graphWidth, 1.0);
 	if (edgeMode)
 	{
@@ -39,5 +42,13 @@ float calculate(float x, float z)
 {
 	x = x * scale * graphWidth;
 	z = z * scale * graphWidth;
-	return $function;
+	if (calculationMode == 0)
+	{
+		return $function;
+	}
+
+	float f = $function;
+	x += epsilon;
+	z += epsilon;
+	return (($function) - f) / epsilon;
 }
