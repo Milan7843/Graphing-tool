@@ -19,7 +19,7 @@ void main()
 	if (edgeMode)
 	{
 		float yt = (y + 1.0) / 2.0;
-		vertexColor = vec4(yt*1.4, 0.0, (1.0 - yt)*1.4, 1.);
+		vertexColor = vec4(yt*1.2, 0.0, (1.0 - yt)*1.2, 1.);
 	}
 	else
 	{

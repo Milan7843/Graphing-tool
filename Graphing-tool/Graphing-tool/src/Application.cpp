@@ -18,6 +18,7 @@ int Application::Start()
 {
 	// Initialising and configuring GLFW
 	initialiseGLFW();
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	// Creating a window
 	GLFWwindow* window = createGLFWWindow(WIDTH, HEIGHT, "Graph");
@@ -100,6 +101,10 @@ int Application::Start()
 	unsigned int guiSwitchKeyPreviousState = 0;
 	bool imGuiEnabled = true;
 	bool showAdditionalInfo = false;
+
+	// View modes
+	bool smoothMesh = false;
+	bool wireframe = false;
 
 	// Render loop: runs while the window does not close
 	while (!glfwWindowShouldClose(window))
@@ -189,19 +194,30 @@ int Application::Start()
 		glm::mat4 projection;
 		projection = camera.getProjectionMatrix(WIDTH, HEIGHT);
 		calculatorShader.setMat4("projection", projection);
-		
-		// Binding the VAO
+
+
+		// Binding vertex array
 		glBindVertexArray(VAO);
-		// Drawing with colour
-		calculatorShader.setBool("edgeMode", false);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glDrawElements(GL_TRIANGLES, (size - 1) * (size - 1) * 6, GL_UNSIGNED_INT /* index type */, 0);
+
+		// Binding the VAO if not in wireframe mode
+		if (!wireframe)
+		{
+			// Drawing with colour
+			calculatorShader.setBool("edgeMode", false);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			glDrawElements(GL_TRIANGLES, (size - 1) * (size - 1) * 6, GL_UNSIGNED_INT /* index type */, 0);
+		}
 		
-		// Drawing edges
-		calculatorShader.setBool("edgeMode", true);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glLineWidth(1.0f);
-		glDrawElements(GL_TRIANGLES, (size - 1) * (size - 1) * 6, GL_UNSIGNED_INT /* index type */, 0);
+		// Drawing edges if not in 'smooth' mode
+		if (!smoothMesh || wireframe)
+		{
+			calculatorShader.setBool("edgeMode", true);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glLineWidth(1.0f);
+			glDrawElements(GL_TRIANGLES, (size - 1) * (size - 1) * 6, GL_UNSIGNED_INT /* index type */, 0);
+		}
+
+		// Unbinding vertex array
 		glBindVertexArray(0);
 
 
@@ -219,15 +235,54 @@ int Application::Start()
 		
 			ImGui::Text("Press F to return to graph view, \nwhere you can look around.");
 
-			ImGui::InputText("Text", &functionInput);
+			ImGui::InputText("Function", &functionInput);
 			if (ImGui::Button("Set function"))
 			{
 				Shader _calculatorShader(functionInput, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader");
 				calculatorShader = _calculatorShader;
 			}
 
+			// Information about the possible functions
+			if (ImGui::CollapsingHeader("Function help"))
+			{
+				ImGui::Text("Possible functions:");
+				ImGui::BulletText("sin(x) -> sine of x");
+				ImGui::BulletText("cos(x) -> cosine of x");
+				ImGui::BulletText("tan(x) -> tangent of x");
+				ImGui::BulletText("asin(x) -> arcsine of x");
+				ImGui::BulletText("acos(x) -> arccosine of x");
+				ImGui::BulletText("atan(x) -> arctangent of x");
+				ImGui::BulletText("exp(x) -> e to the power x");
+				ImGui::BulletText("pow(x, z) -> x to the power z");
+				ImGui::BulletText("sqrt(x) -> square root of x");
+				ImGui::BulletText("abs(x) -> absolute value of x");
+				ImGui::BulletText("floor(x) -> floor of x (round down)");
+				ImGui::BulletText("ceil(x) -> ceil of x (round up)");
+				ImGui::BulletText("min(x, z) -> minimum of x and z");
+				ImGui::BulletText("max(x, z) -> maximum of x and z");
+
+				ImGui::Text("Use variables x and z for inputs.");
+				ImGui::Text("You can also use these operators:");
+				ImGui::BulletText("+ for addition");
+				ImGui::BulletText("- for subtraction");
+				ImGui::BulletText("/ for division");
+				ImGui::BulletText("* for multiplication");
+				ImGui::Text("x is represented by the red axis, z by the blue axis.");
+			}
+
+
+
 			ImGui::SliderFloat("Scale", &scale, 0.1f, 10.0f);
 			ImGui::SliderFloat("Graph width", &graphWidth, 0.1f, 10.0f);
+			if (ImGui::Button(smoothMesh ? "Disable smooth mode" : "Enable smooth mode"))
+			{
+				smoothMesh = !smoothMesh;
+			}
+			if (ImGui::Button(wireframe ? "Disable wireframe mode" : "Enable wireframe mode"))
+			{
+				wireframe = !wireframe;
+			}
+
 
 			// Additional information
 			if (showAdditionalInfo)
@@ -238,8 +293,16 @@ int Application::Start()
 				}
 
 				std::string bounds = std::to_string(scale * graphWidth);
-				std::string bounds_info = "Current bounds:\nx: [-" + bounds + ", " + bounds + "], z: [-" + bounds + ", " + bounds + "] ";
-				ImGui::Text(bounds_info.c_str());
+				std::string boundsInfo = "Current bounds:\nx: [-" + bounds + ", " + bounds + "], z: [-" + bounds + ", " + bounds + "]";
+				std::string cameraPosition = "Camera position: ("
+					+ std::to_string(camera.getPosition().x) + ", "
+					+ std::to_string(camera.getPosition().y) + ", "
+					+ std::to_string(camera.getPosition().z) + ")";
+				std::string cameraRotation = "Camera pitch: "
+					+ std::to_string(camera.getPitch()) + ", yaw: " + std::to_string(camera.getYaw());
+				ImGui::Text(boundsInfo.c_str());
+				ImGui::Text(cameraPosition.c_str());
+				ImGui::Text(cameraRotation.c_str());
 			}
 			else
 			{

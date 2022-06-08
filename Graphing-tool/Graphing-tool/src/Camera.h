@@ -28,6 +28,11 @@ public:
 	// Don't use the current mouse offset, but start from where the cursor is
 	void resetMouseOffset();
 
+	// Get the camera position, rotation
+	glm::vec3 getPosition();
+	float getPitch();
+	float getYaw();
+
 	/* Private members */
 private:
 	// Camera postion data
@@ -35,7 +40,7 @@ private:
 	glm::vec3 up;
 	glm::vec3 forward;
 	float lastx = 400, lasty = 300;
-	float yaw = 35.0f, pitch = -18.0f;
+	float yaw = 35.0f, pitch = -30.0f;
 	bool firstMouse = true;
 	const float cameraSpeed = 1.0f;
 };

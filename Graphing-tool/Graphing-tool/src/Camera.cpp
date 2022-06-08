@@ -77,6 +77,21 @@ void Camera::resetMouseOffset()
 	firstMouse = true;
 }
 
+glm::vec3 Camera::getPosition()
+{
+	return position;
+}
+
+float Camera::getPitch()
+{
+	return pitch;
+}
+
+float Camera::getYaw()
+{
+	return yaw;
+}
+
 // Processes the input
 void Camera::processInput(GLFWwindow* window, float deltaTime)
 {
