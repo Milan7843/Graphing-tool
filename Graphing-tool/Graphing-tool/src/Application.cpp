@@ -149,16 +149,6 @@ int Application::Start()
 		// Always check for window close on escape
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, true);
-		
-		// Scale adjustment
-		if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-			scale += scrollSens * deltaTime;
-		if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-			scale -= scrollSens * deltaTime;
-		if (scale < 0.1f)
-			scale = 0.1f;
-		if (scale > 10.0f)
-			scale = 10.0f;
 
 		// Enable/disable the ImGui GUI on key switch
 		if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && guiSwitchKeyPreviousState == GLFW_RELEASE)

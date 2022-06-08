@@ -17,7 +17,7 @@
 // Window size
 const int WIDTH = 1200, HEIGHT = 900;
 
-// The input function, can use variables x, z and regular glsl functions
+// The input function (can be modified during runtime)
 std::string function(
 	"sin(x*z)/1.4 + cos((x+z)/2)"
 );
