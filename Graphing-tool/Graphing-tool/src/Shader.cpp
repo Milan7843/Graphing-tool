@@ -68,7 +68,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 	glDeleteShader(fragment);
 }
 
-Shader::Shader(std::string &function, const char* vertexPath, const char* fragmentPath)
+Shader::Shader(std::string &function, const char* vertexPath, const char* fragmentPath, bool throwError)
 {
 	/* Retrieving the shader data from the files */
 
@@ -129,13 +129,22 @@ Shader::Shader(std::string &function, const char* vertexPath, const char* fragme
 	if (!success)
 	{
 		glGetProgramInfoLog(ID, 512, NULL, infoLog);
-		std::cout << "Error: shader program linking failed.\n" << infoLog << std::endl;
+		if (throwError)
+		{
+			throw std::exception(infoLog);
+		}
+		else
+		{
+			std::cout << "Error: shader program linking failed.\n" << infoLog << std::endl;
+			return;
+		}
 	}
 
 	// delete the shaders as they're linked into our program now and no longer necessary
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
 }
+
 Shader::~Shader()
 {
 	std::cout << "Shader object destroyed.";
@@ -144,9 +153,11 @@ Shader::~Shader()
 bool Shader::replace(std::string& str, const std::string& from, const std::string& to)
 {
 	size_t start_pos = str.find(from);
-	if (start_pos == std::string::npos)
-		return false;
-	str.replace(start_pos, from.length(), to);
+	while (start_pos != std::string::npos)
+	{
+		str.replace(start_pos, from.length(), to);
+		start_pos = str.find(from);
+	}
 	return true;
 }
 
@@ -170,6 +181,10 @@ void Shader::setInt(const std::string& name, int value) const
 void Shader::setVector3(const std::string& name, float v1, float v2, float v3) const
 {
 	glUniform3f(glGetUniformLocation(ID, name.c_str()), v1, v2, v3);
+}
+void Shader::setVector3(const std::string& name, glm::vec3 v) const
+{
+	glUniform3f(glGetUniformLocation(ID, name.c_str()), v.x, v.y, v.z);
 }
 void Shader::setMat4(const std::string& name, glm::mat4 matrix) const
 {

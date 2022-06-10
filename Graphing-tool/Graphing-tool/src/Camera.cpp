@@ -32,7 +32,7 @@ glm::mat4 Camera::getViewMatrix()
 }
 glm::mat4 Camera::getProjectionMatrix(int width, int height)
 {   //                           cam pos,  target,            up vector
-	glm::mat4 projection = glm::perspective(glm::radians(40.0f), (float)width / (float)height, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.01f, 100.0f);
 	return projection;
 }
 
@@ -52,9 +52,8 @@ void Camera::mouseCallback(GLFWwindow* window, double xpos, double ypos)
 	lastx = xpos;
 	lasty = ypos;
 
-	const float sensitivity = 0.1f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
+	xoffset *= sensitivity * 0.1f;
+	yoffset *= sensitivity * 0.1f;
 
 	// Applying rotation
 	yaw += xoffset;
@@ -70,6 +69,41 @@ void Camera::mouseCallback(GLFWwindow* window, double xpos, double ypos)
 	direction.y = sin(glm::radians(pitch));
 	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 	forward = glm::normalize(direction);
+}
+
+void Camera::resetMouseOffset()
+{
+	firstMouse = true;
+}
+
+glm::vec3 Camera::getPosition()
+{
+	return position;
+}
+
+float Camera::getPitch()
+{
+	return pitch;
+}
+
+float Camera::getYaw()
+{
+	return yaw;
+}
+
+float* Camera::getCameraSpeedPointer()
+{
+	return &cameraSpeed;
+}
+
+float* Camera::getFovPointer()
+{
+	return &fov;
+}
+
+float* Camera::getSensitivityPointer()
+{
+	return &sensitivity;
 }
 
 // Processes the input
@@ -93,7 +127,4 @@ void Camera::processInput(GLFWwindow* window, float deltaTime)
 		position += realSpeed * up;
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 		position -= realSpeed * up;
-
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
 }

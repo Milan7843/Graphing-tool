@@ -10,25 +10,20 @@
  - D to move right
  - E to move up
  - Q to move down
- - Z to increase the scale
- - X to decrease the scale
+ - F to enable/disable settings and info menu
  - Mouse to look around
 */
 
 // Window size
 const int WIDTH = 1200, HEIGHT = 900;
 
-// The input function, can use variables x, z and regular glsl functions
+// The input function (can be modified during runtime)
 std::string function(
-	"sin(x*z) + cos(x+z)"
+	"sin(x*z)/1.4 + cos((x+z)/2)"
 );
-
-
-// The sensitivity of the graph rescaling
-const float scrollSensitivity = 1.0f;
 
 int main()
 {
-	Application application(WIDTH, HEIGHT, function, scrollSensitivity);
+	Application application(WIDTH, HEIGHT, function);
 	return application.Start();
 }
