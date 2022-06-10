@@ -1,4 +1,9 @@
-﻿  Application.cpp
+﻿  AbstractShader.cpp
+  Application.cpp
 I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Application.cpp(149,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Application.cpp(192,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  ComputeShader.cpp
+  Shader.cpp
+  main.cpp
+  Generating Code...
   Graphing-tool.vcxproj -> I:\Graphing-tool\Graphing-tool\x64\Debug\Graphing-tool.exe

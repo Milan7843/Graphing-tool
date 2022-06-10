@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\AbstractShader.cpp" />
     <ClCompile Include="src\ComputeShader.cpp" />
     <ClCompile Include="include\imgui\imgui.cpp" />
     <ClCompile Include="include\imgui\imgui_demo.cpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="src\Callbacks.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\AbstractShader.h" />
     <ClInclude Include="src\ComputeShader.h" />
     <ClInclude Include="include\glad\glad.h" />
     <ClInclude Include="include\GLFW\glfw3.h" />

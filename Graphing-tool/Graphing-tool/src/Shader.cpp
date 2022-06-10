@@ -3,39 +3,8 @@
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath)
 {
-	/* Retrieving the shader data from the files */
-
-	std::string vertexCode;
-	std::string fragmentCode;
-	std::ifstream vShaderFile;
-	std::ifstream fShaderFile;
-	// Ensuring ifstream objects can throw exceptions:
-	vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
-	try
-	{
-		// Opening files
-		vShaderFile.open(vertexPath);
-		fShaderFile.open(fragmentPath);
-
-		// Reading file into streams
-		std::stringstream vShaderStream, fShaderStream;
-		vShaderStream << vShaderFile.rdbuf();
-		fShaderStream << fShaderFile.rdbuf();
-
-		// Closing file handlers
-		vShaderFile.close();
-		fShaderFile.close();
-
-		// Converting the streams into strings
-		vertexCode = vShaderStream.str();
-		fragmentCode = fShaderStream.str();
-	}
-	catch (std::ifstream::failure e)
-	{
-		std::cout << "Error: shader file not correctly read." << std::endl;
-	}
+	std::string vertexCode = readFile(vertexPath);
+	std::string fragmentCode = readFile(fragmentPath);
 	const char* vShaderCode = vertexCode.c_str();
 	const char* fShaderCode = fragmentCode.c_str();
 
@@ -48,20 +17,10 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 
 
 	/* Creating the shader program */
-	int success;
-	char infoLog[512];
-
 	ID = glCreateProgram();
 	glAttachShader(ID, vertex);
 	glAttachShader(ID, fragment);
-	glLinkProgram(ID);
-	// Print linking errors if any
-	glGetProgramiv(ID, GL_LINK_STATUS, &success);
-	if (!success)
-	{
-		glGetProgramInfoLog(ID, 512, NULL, infoLog);
-		std::cout << "Error: shader program linking failed.\n" << infoLog << std::endl;
-	}
+	linkProgram(false);
 
 	// delete the shaders as they're linked into our program now and no longer necessary
 	glDeleteShader(vertex);
@@ -70,39 +29,8 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 
 Shader::Shader(std::string &function, const char* vertexPath, const char* fragmentPath, bool throwError)
 {
-	/* Retrieving the shader data from the files */
-
-	std::string vertexCode;
-	std::string fragmentCode;
-	std::ifstream vShaderFile;
-	std::ifstream fShaderFile;
-	// Ensuring ifstream objects can throw exceptions:
-	vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
-	try
-	{
-		// Opening files
-		vShaderFile.open(vertexPath);
-		fShaderFile.open(fragmentPath);
-
-		// Reading file into streams
-		std::stringstream vShaderStream, fShaderStream;
-		vShaderStream << vShaderFile.rdbuf();
-		fShaderStream << fShaderFile.rdbuf();
-
-		// Closing file handlers
-		vShaderFile.close();
-		fShaderFile.close();
-
-		// Converting the streams into strings
-		vertexCode = vShaderStream.str();
-		fragmentCode = fShaderStream.str();
-	}
-	catch (std::ifstream::failure e)
-	{
-		std::cout << "Error: shader file not correctly read." << std::endl;
-	}
+	std::string vertexCode = readFile(vertexPath);
+	std::string fragmentCode = readFile(fragmentPath);
 	std::cout << replace(vertexCode, "$function", function);
 	const char* vShaderCode = vertexCode.c_str();
 	const char* fShaderCode = fragmentCode.c_str();
@@ -117,28 +45,10 @@ Shader::Shader(std::string &function, const char* vertexPath, const char* fragme
 
 	/* Creating the shader program */
 
-	int success;
-	char infoLog[512];
-
 	ID = glCreateProgram();
 	glAttachShader(ID, vertex);
 	glAttachShader(ID, fragment);
-	glLinkProgram(ID);
-	// Print linking errors if any
-	glGetProgramiv(ID, GL_LINK_STATUS, &success);
-	if (!success)
-	{
-		glGetProgramInfoLog(ID, 512, NULL, infoLog);
-		if (throwError)
-		{
-			throw std::exception(infoLog);
-		}
-		else
-		{
-			std::cout << "Error: shader program linking failed.\n" << fragmentPath << std::endl << infoLog << std::endl;
-			return;
-		}
-	}
+	linkProgram(throwError);
 
 	// delete the shaders as they're linked into our program now and no longer necessary
 	glDeleteShader(vertex);
@@ -148,64 +58,4 @@ Shader::Shader(std::string &function, const char* vertexPath, const char* fragme
 Shader::~Shader()
 {
 	std::cout << "Shader object destroyed.";
-}
-
-bool Shader::replace(std::string& str, const std::string& from, const std::string& to)
-{
-	size_t start_pos = str.find(from);
-	while (start_pos != std::string::npos)
-	{
-		str.replace(start_pos, from.length(), to);
-		start_pos = str.find(from);
-	}
-	return true;
-}
-
-void Shader::use()
-{
-	glUseProgram(ID);
-}
-
-void Shader::setBool(const std::string& name, bool value) const
-{
-	glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
-}
-void Shader::setFloat(const std::string& name, float value) const
-{
-	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
-}
-void Shader::setInt(const std::string& name, int value) const
-{
-	glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
-}
-void Shader::setVector3(const std::string& name, float v1, float v2, float v3) const
-{
-	glUniform3f(glGetUniformLocation(ID, name.c_str()), v1, v2, v3);
-}
-void Shader::setVector3(const std::string& name, glm::vec3 v) const
-{
-	glUniform3f(glGetUniformLocation(ID, name.c_str()), v.x, v.y, v.z);
-}
-void Shader::setMat4(const std::string& name, glm::mat4 matrix) const
-{
-	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(matrix));
-}
-
-unsigned int Shader::compileShader(GLenum type, const char* code)
-{
-	unsigned int id;
-	int success;
-	char infoLog[512];
-
-	id = glCreateShader(type);
-	glShaderSource(id, 1, &code, NULL);
-	glCompileShader(id);
-	// Printing errors:
-	glGetShaderiv(id, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(id, 512, NULL, infoLog);
-		std::cout << "Error: shader compilation failed." << type << std::endl;
-	}
-	return id;
 }
