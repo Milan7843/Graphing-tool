@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\ComputeShader.cpp" />
     <ClCompile Include="include\imgui\imgui.cpp" />
     <ClCompile Include="include\imgui\imgui_demo.cpp" />
     <ClCompile Include="include\imgui\imgui_draw.cpp" />
@@ -163,6 +164,7 @@
     <ClCompile Include="src\Callbacks.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ComputeShader.h" />
     <ClInclude Include="include\glad\glad.h" />
     <ClInclude Include="include\GLFW\glfw3.h" />
     <ClInclude Include="include\GLFW\glfw3native.h" />
@@ -606,6 +608,7 @@
     <None Include="src\shaders\calculatorFragmentShader.shader" />
     <None Include="src\shaders\calculatorVertexShader.shader" />
     <None Include="src\shaders\fragmentShader.shader" />
+    <None Include="src\shaders\meshGenerator.shader" />
     <None Include="src\shaders\vertexShader.shader" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

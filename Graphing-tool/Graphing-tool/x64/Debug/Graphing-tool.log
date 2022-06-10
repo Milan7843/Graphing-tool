@@ -1,5 +1,4 @@
 ﻿  Application.cpp
-I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Application.cpp(148,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Application.cpp(191,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Application.cpp(149,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+I:\Graphing-tool\Graphing-tool\Graphing-tool\src\Application.cpp(192,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
   Graphing-tool.vcxproj -> I:\Graphing-tool\Graphing-tool\x64\Debug\Graphing-tool.exe

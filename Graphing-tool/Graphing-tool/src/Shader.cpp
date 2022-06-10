@@ -135,7 +135,7 @@ Shader::Shader(std::string &function, const char* vertexPath, const char* fragme
 		}
 		else
 		{
-			std::cout << "Error: shader program linking failed.\n" << infoLog << std::endl;
+			std::cout << "Error: shader program linking failed.\n" << fragmentPath << std::endl << infoLog << std::endl;
 			return;
 		}
 	}

@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "Shader.h"
+#include "ComputeShader.h"
 #include "Camera.h"
 #include "Callbacks.h"
 #include "Interpreter.h"

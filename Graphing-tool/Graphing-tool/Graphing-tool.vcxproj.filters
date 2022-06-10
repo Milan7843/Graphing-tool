@@ -63,6 +63,9 @@
     <ClCompile Include="src\Interpreter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ComputeShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\glad\glad.h">
@@ -971,6 +974,9 @@
     <ClInclude Include="src\Interpreter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ComputeShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\shaders\vertexShader.shader" />
@@ -1385,5 +1391,6 @@
     </None>
     <None Include="src\shaders\calculatorVertexShader.shader" />
     <None Include="src\shaders\calculatorFragmentShader.shader" />
+    <None Include="src\shaders\meshGenerator.shader" />
   </ItemGroup>
 </Project>

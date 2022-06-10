@@ -59,6 +59,7 @@ int Application::Start()
 	//Shader shader("./src/shaders/vertexShader.shader", "./src/shaders/fragmentShader.shader");
 	Shader shader("src/shaders/vertexShader.shader", "src/shaders/fragmentShader.shader");
 	Shader calculatorShader(function, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader", false);
+	ComputeShader meshGeneratorShader(function, "src/shaders/meshGenerator.shader", false);
 
 	// Creating our vertex array object
 	unsigned int VAO;
@@ -427,9 +428,9 @@ void Application::initialiseGLFW()
 {
 	// Initialises GLFW
 	glfwInit();
-	// Setting OpenGL version 3.3
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	// Setting OpenGL version 4.6
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	// OpenGL profile: core
 	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
