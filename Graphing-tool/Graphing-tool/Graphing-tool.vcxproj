@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="include\glad\glad.c" />
     <ClCompile Include="src\AbstractShader.cpp" />
     <ClCompile Include="src\ComputeShader.cpp" />
     <ClCompile Include="include\imgui\imgui.cpp" />

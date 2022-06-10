@@ -68,8 +68,30 @@ int Application::Start()
 
 	const int size = 400;
 	{
+
+		unsigned int ssbo = 0;
+		glGenBuffers(1, &ssbo);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * 3 * sizeof(float), 0, GL_DYNAMIC_COPY);
+
+		// Bind to slot 0 (vertices)
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
+
+		meshGeneratorShader.use();
+		glDispatchCompute(size, size, 1);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+		// Reading the data back from the compute shader
 		std::vector<float> vertices(size * size * 3);
-		generateGrid(&vertices, size, size);
+		glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, size * size * 3 * sizeof(float), vertices.data());
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		for (int i = 0; i < size; i++)
+		{
+			std::cout << vertices[i] << std::endl;
+		}
+
+		//std::vector<float> vertices(size * size * 3);
+		//generateGrid(&vertices, size, size);
 		std::vector<unsigned int> indices((size - 1) * (size - 1) * 6);
 		generateGridIndices(&indices, size, size);
 

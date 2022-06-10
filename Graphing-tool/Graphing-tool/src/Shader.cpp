@@ -22,7 +22,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 	glAttachShader(ID, fragment);
 	linkProgram(false);
 
-	// delete the shaders as they're linked into our program now and no longer necessary
+	// Deleting the shaders as they're linked into our program now and no longer necessary
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
 }
@@ -50,7 +50,7 @@ Shader::Shader(std::string &function, const char* vertexPath, const char* fragme
 	glAttachShader(ID, fragment);
 	linkProgram(throwError);
 
-	// delete the shaders as they're linked into our program now and no longer necessary
+	// Deleting the shaders as they're linked into our program now and no longer necessary
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
 }

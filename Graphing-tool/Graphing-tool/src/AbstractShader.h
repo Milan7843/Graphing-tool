@@ -34,4 +34,8 @@ protected:
 	bool replace(std::string& str, const std::string& from, const std::string& to);
 	std::string readFile(const char* shaderPath);
 	void linkProgram(bool throwError);
+
+	// Cannot be instantiated
+	AbstractShader() {}
+	~AbstractShader() {}
 };
