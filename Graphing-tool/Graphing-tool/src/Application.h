@@ -75,8 +75,9 @@ private:
 	unsigned int generateAxesVAO();
 
 	// Modifies the input array such that it is a grid
-	void generateGrid(std::vector<float>* vertices, int x, int y);
+	void generateGrid(std::vector<float>* vertices, int size);
 	void generateGridIndices(std::vector<unsigned int>* indices, int x, int y);
+	void generateGridGPU(ComputeShader* computeShader, std::vector<float>* vertices, std::vector<unsigned int>* indices, int size);
 };
 
 #endif

@@ -1,4 +1,5 @@
 #include "Application.h"
+#include <chrono>         // std::chrono::seconds
 
 Application::Application(const int width, const int height, std::string function)
 	: WIDTH(width), HEIGHT(height),
@@ -66,34 +67,19 @@ int Application::Start()
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
-	const int size = 400;
+	const int size = 500;
 	{
-
-		unsigned int ssbo = 0;
-		glGenBuffers(1, &ssbo);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * 3 * sizeof(float), 0, GL_DYNAMIC_COPY);
-
-		// Bind to slot 0 (vertices)
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
-
-		meshGeneratorShader.use();
-		glDispatchCompute(size, size, 1);
-		glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-		// Reading the data back from the compute shader
+		// CPU generated vertices
 		std::vector<float> vertices(size * size * 3);
-		glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, size * size * 3 * sizeof(float), vertices.data());
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-		for (int i = 0; i < size; i++)
-		{
-			std::cout << vertices[i] << std::endl;
-		}
-
-		//std::vector<float> vertices(size * size * 3);
-		//generateGrid(&vertices, size, size);
 		std::vector<unsigned int> indices((size - 1) * (size - 1) * 6);
-		generateGridIndices(&indices, size, size);
+
+		std::chrono::steady_clock::time_point gpu_begin = std::chrono::steady_clock::now();
+		// With a size of 5000, the GPU generator is almost 10 times as fast!
+		generateGridGPU(&meshGeneratorShader, &vertices, &indices, size);
+		std::chrono::steady_clock::time_point gpu_end = std::chrono::steady_clock::now();
+
+		std::cout << "GPU time = " << std::chrono::duration_cast<std::chrono::microseconds>(gpu_end - gpu_begin).count() << "[µs]" << std::endl;
+		std::cout << "GPU time = " << std::chrono::duration_cast<std::chrono::nanoseconds> (gpu_end - gpu_begin).count() << "[ns]" << std::endl;
 
 		unsigned int VBO;
 		// Making a buffer with the ID in VBO
@@ -457,18 +443,17 @@ void Application::initialiseGLFW()
 	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
-void Application::generateGrid(std::vector<float>* vertices, int x, int y)
+void Application::generateGrid(std::vector<float>* vertices, int size)
 {
-	float xoffset = 2.0f / (float)(x - 1);
-	float yoffset = 2.0f / (float)(y - 1);
-	for (int i = 0; i < x * y; i++)
+	float offset = 2.0f / (float)(size - 1);
+	for (int i = 0; i < size * size; i++)
 	{
-		int cx = i % y;
-		int cy = i / x;
+		int cx = i % size;
+		int cy = i / size;
 
-		vertices->at(i * 3 + 0) = (cx * xoffset - 1.0f); // x
+		vertices->at(i * 3 + 0) = (cx * offset - 1.0f); // x
 		vertices->at(i * 3 + 1) = 0.0f; // y
-		vertices->at(i * 3 + 2) = (cy * yoffset - 1.0f); // z
+		vertices->at(i * 3 + 2) = (cy * offset - 1.0f); // z
 	}
 }
 void Application::generateGridIndices(std::vector<unsigned int>* indices, int x, int y)
@@ -489,6 +474,41 @@ void Application::generateGridIndices(std::vector<unsigned int>* indices, int x,
 		indices->at(i * 6 + 4) = cx + cy * x + x + 1; // 3
 		indices->at(i * 6 + 5) = cx + cy * x + x; // 2
 	}
+}
+void Application::generateGridGPU(ComputeShader* computeShader, std::vector<float>* vertices, std::vector<unsigned int>* indices, int size)
+{
+	// Generating the grid vertices and indices on the GPU
+
+	// Assigning the compute shader
+	computeShader->use();
+
+	computeShader->setInt("size", size);
+	computeShader->setFloat("offset", 2.0f / (float)(size - 1));
+
+	// Creating a buffer for the vertices to go into
+	unsigned int verticesSSBO = 0;
+	glGenBuffers(1, &verticesSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, verticesSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * 3 * sizeof(float), 0, GL_DYNAMIC_COPY);
+
+	// Creating a buffer for the indices to go into
+	unsigned int indicesSSBO = 0;
+	glGenBuffers(1, &indicesSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, indicesSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, (size - 1) * (size - 1) * 6 * sizeof(unsigned int), 0, GL_DYNAMIC_COPY);
+
+	// Bind to slot 0 (vertices) and 1 (indices)
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, verticesSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, indicesSSBO);
+
+	// Running the compute shader
+	glDispatchCompute(size, size, 1);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+	// Reading the data back from the compute shader
+	glGetNamedBufferSubData(verticesSSBO, 0, size * size * 3 * sizeof(float), vertices->data());
+	glGetNamedBufferSubData(indicesSSBO, 0, (size - 1) * (size - 1) * 6 * sizeof(unsigned int), indices->data());
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 // Initialises GLAD

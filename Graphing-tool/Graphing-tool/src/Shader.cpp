@@ -57,5 +57,5 @@ Shader::Shader(std::string &function, const char* vertexPath, const char* fragme
 
 Shader::~Shader()
 {
-	std::cout << "Shader object destroyed.";
+	std::cout << "Shader destroyed." << std::endl;
 }

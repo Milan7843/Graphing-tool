@@ -46,5 +46,5 @@ ComputeShader::ComputeShader(std::string& function, const char* shaderPath, bool
 
 ComputeShader::~ComputeShader()
 {
-	std::cout << "Shader object destroyed.";
+	std::cout << "Compute shader destroyed." << std::endl;
 }
