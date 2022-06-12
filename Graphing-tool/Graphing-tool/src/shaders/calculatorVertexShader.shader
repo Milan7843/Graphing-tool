@@ -17,7 +17,7 @@ uniform bool edgeMode;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform float scale;
+//uniform float scale;
 uniform float graphWidth;
 uniform float verticalScale;
 uniform vec3 upperColor;
@@ -41,7 +41,7 @@ void main()
 	// Index calculated from the individual indices for x and z
 	int i = int(cx + size * cz);
 
-	float y = heights[i];
+	float y = heights[i] * verticalScale;
 
 
 	gl_Position = projection * view * model * vec4(aPos.x * graphWidth, y, aPos.z * graphWidth, 1.0);
@@ -57,7 +57,7 @@ void main()
 		vertexColor = vec4((yt * upperColor + (1 - yt) * lowerColor), 1.);
 	}
 }
-
+/*
 float calculate(float x, float z)
 {
 	x = x * scale * graphWidth;
@@ -71,4 +71,4 @@ float calculate(float x, float z)
 	x += epsilon;
 	z += epsilon;
 	return (($function) - f) / epsilon;
-}
+}*/

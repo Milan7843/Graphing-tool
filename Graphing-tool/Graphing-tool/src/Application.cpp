@@ -68,40 +68,9 @@ int Application::Start()
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
-	const unsigned int size = 1200;
-	{
-		// CPU generated vertices
-		std::vector<float> vertices(size * size * 3);
-		std::vector<unsigned int> indices((size - 1) * (size - 1) * 6);
+	generateGridMesh(&meshGeneratorShader);
 
-		std::chrono::steady_clock::time_point gpu_begin = std::chrono::steady_clock::now();
-		// With a size of 5000, the GPU generator is almost 10 times as fast!
-		// size=3200 -> t=~280ms
-		generateGridGPU(&meshGeneratorShader, &vertices, &indices, size);
-		std::chrono::steady_clock::time_point gpu_end = std::chrono::steady_clock::now();
-
-		std::cout << "GPU mesh gen. time = " << std::chrono::duration_cast<std::chrono::microseconds>(gpu_end - gpu_begin).count() << " microseconds" << std::endl;
-
-		unsigned int VBO;
-		// Making a buffer with the ID in VBO
-		glGenBuffers(1, &VBO);
-		// Binding our new buffer to the GL_ARRAY_BUFFER target
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		// Binding our custom data into the buffer
-		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
-
-		// Binding the element buffer object
-		unsigned int EBO;
-		// Generating a buffer for the EBO
-		glGenBuffers(1, &EBO);
-		// Binding the EBO
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		// Inserting data into the buffer
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-	}
-
-	// Telling OpenGL how to interpret the data
-	// Position data
+	// Telling OpenGL how to interpret the data (only position data for now)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
@@ -113,11 +82,10 @@ int Application::Start()
 	glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * sizeof(float), 0, GL_DYNAMIC_COPY);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, heightsSSBO);
 
-	calculatorComputeShader.setFloat("offset", 2.0f / (float)(size - 1.0f));
-	calculatorComputeShader.setInt("size", size);
 	calculatorShader.setFloat("offset", 2.0f / (float)(size - 1.0f));
 	calculatorShader.setInt("size", size);
-	calculate(&calculatorComputeShader, size, heightsSSBO);
+
+	calculate(&calculatorComputeShader, heightsSSBO);
 
 	unsigned int axesVAO = generateAxesVAO();
 
@@ -128,7 +96,6 @@ int Application::Start()
 	float timeSinceGuiSwitch = 10.0f;
 
 	// Custom settings
-	float graphWidth = 1.0f;
 	float verticalScale = 1.0f;
 	unsigned int guiSwitchKeyPreviousState = 0;
 	bool imGuiEnabled = true;
@@ -157,6 +124,9 @@ int Application::Start()
 	{
 		// Checking for event input
 		glfwPollEvents();
+
+		// Calculating the heights (does not run if no important variables changed)
+		calculate(&calculatorComputeShader, heightsSSBO);
 
 		// Only move the camera if the GUI is not enabled
 		if (!imGuiEnabled)
@@ -213,13 +183,12 @@ int Application::Start()
 		
 		// Setting uniforms
 		float time = glfwGetTime();
-		
-		calculatorShader.setFloat("scale", scale);
-		calculatorShader.setFloat("verticalScale", verticalScale);
+
 		calculatorShader.setFloat("graphWidth", graphWidth);
+		calculatorShader.setFloat("verticalScale", verticalScale);
 		calculatorShader.setVector3("upperColor", imGuiVec4ToGlmVec3(upperColor));
 		calculatorShader.setVector3("lowerColor", imGuiVec4ToGlmVec3(lowerColor));
-		
+
 		// Model matrix
 		glm::mat4 model = glm::mat4(1.0f);
 		calculatorShader.setMat4("model", model);
@@ -645,13 +614,27 @@ void Application::drawAxes(unsigned int VAO, Shader* shader, Camera* camera)
 	glBindVertexArray(0);
 }
 
-void Application::calculate(ComputeShader* computeShader, unsigned int size, unsigned int ssbo)
+void Application::calculate(ComputeShader* computeShader, unsigned int ssbo)
 {
 	// Calculating the heights of each point on the GPU using a compute shader
+
+	// Setting the changed variables
+	if (graphWidth == generatedGraphWidth &&
+		scale == generatedScale)
+	{
+		// No important changed variables: do not run
+		std::cout << "Not running calculation" << std::endl;
+		return;
+	}
+	std::cout << "Running calculation" << std::endl;
+	generatedGraphWidth = graphWidth;
+	generatedScale = scale;
 
 	// Assigning the compute shader
 	computeShader->use();
 
+	computeShader->setFloat("scale", scale);
+	computeShader->setFloat("graphWidth", graphWidth);
 	computeShader->setInt("size", size);
 	computeShader->setFloat("offset", 2.0f / (float)(size - 1));
 
@@ -664,4 +647,36 @@ void Application::calculate(ComputeShader* computeShader, unsigned int size, uns
 
 	// Unbinding the buffer
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+void Application::generateGridMesh(ComputeShader* generatorComputeShader)
+{
+	// CPU generated vertices
+	std::vector<float> vertices(size * size * 3);
+	std::vector<unsigned int> indices((size - 1) * (size - 1) * 6);
+
+	std::chrono::steady_clock::time_point gpu_begin = std::chrono::steady_clock::now();
+	// With a size of 5000, the GPU generator is almost 10 times as fast!
+	// size=3200 -> t=~280ms
+	generateGridGPU(generatorComputeShader, &vertices, &indices, size);
+	std::chrono::steady_clock::time_point gpu_end = std::chrono::steady_clock::now();
+
+	std::cout << "GPU mesh gen. time = " << std::chrono::duration_cast<std::chrono::microseconds>(gpu_end - gpu_begin).count() << " microseconds" << std::endl;
+
+	unsigned int VBO;
+	// Making a buffer with the ID in VBO
+	glGenBuffers(1, &VBO);
+	// Binding our new buffer to the GL_ARRAY_BUFFER target
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// Binding our custom data into the buffer
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+
+	// Binding the element buffer object
+	unsigned int EBO;
+	// Generating a buffer for the EBO
+	glGenBuffers(1, &EBO);
+	// Binding the EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	// Inserting data into the buffer
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 }

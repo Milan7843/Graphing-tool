@@ -8,6 +8,8 @@ layout(std430, binding = 0) buffer Heights
 
 uniform int size;
 uniform float offset;
+uniform float scale;
+uniform float graphWidth;
 
 void main()
 {
@@ -16,12 +18,12 @@ void main()
 	int cz = int(gl_GlobalInvocationID.y);
 
 	// Calculating world position from index
-	float x = (float(cx) * offset - 1.0);
-	float z = (float(cz) * offset - 1.0);
+	float x = (float(cx) * offset - 1.0) * scale * graphWidth;
+	float z = (float(cz) * offset - 1.0) * scale * graphWidth;
 
 	// Calculating the total index, used to map the 2D indices to a 1D array
 	int i = int(cx + size * cz);
 
 	// Assigning the value
-	heights[i] = float($function);
+	heights[i] = float($function) / scale;
 }

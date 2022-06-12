@@ -57,7 +57,11 @@ private:
 	float deltaTime = 0.0f;	// Time between current frame and last frame
 	float lastFrame = 0.0f; // Time of last frame
 
+	float graphWidth = 1.0f;
+	float generatedGraphWidth = 0.0f; // Holds the old value of graphWidth if it changes
 	float scale = 3.0f;
+	float generatedScale = 0.0f; // Holds the old value of scale if it changes
+	const unsigned int size = 1200;
 
 	// Initialises and configures GLFW
 	void initialiseGLFW();
@@ -71,7 +75,10 @@ private:
 	// Draws the axes
 	void drawAxes(unsigned int VAO, Shader* shader, Camera* camera);
 
-	void calculate(ComputeShader* computeShader, unsigned int size, unsigned int ssbo);
+	void calculate(ComputeShader* computeShader, unsigned int ssbo);
+
+	// Generate the grid mesh with the given compute shader
+	void generateGridMesh(ComputeShader* generatorComputeShader);
 
 	// Generates a VAO for the axes
 	unsigned int generateAxesVAO();
