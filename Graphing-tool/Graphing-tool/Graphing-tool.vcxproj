@@ -608,6 +608,7 @@
     <None Include="include\glm\gtx\vector_angle.inl" />
     <None Include="include\glm\gtx\vector_query.inl" />
     <None Include="include\glm\gtx\wrap.inl" />
+    <None Include="src\shaders\calculatorComputeShader.shader" />
     <None Include="src\shaders\calculatorFragmentShader.shader" />
     <None Include="src\shaders\calculatorVertexShader.shader" />
     <None Include="src\shaders\fragmentShader.shader" />

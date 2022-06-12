@@ -71,6 +71,8 @@ private:
 	// Draws the axes
 	void drawAxes(unsigned int VAO, Shader* shader, Camera* camera);
 
+	void calculate(ComputeShader* computeShader, unsigned int size, unsigned int ssbo);
+
 	// Generates a VAO for the axes
 	unsigned int generateAxesVAO();
 

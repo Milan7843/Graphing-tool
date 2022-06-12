@@ -1401,5 +1401,6 @@
     <None Include="src\shaders\calculatorVertexShader.shader" />
     <None Include="src\shaders\calculatorFragmentShader.shader" />
     <None Include="src\shaders\meshGenerator.shader" />
+    <None Include="src\shaders\calculatorComputeShader.shader" />
   </ItemGroup>
 </Project>

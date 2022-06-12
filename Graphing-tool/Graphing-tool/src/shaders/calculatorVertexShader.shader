@@ -3,6 +3,16 @@ layout(location = 0) in vec3 aPos;
 
 out vec4 vertexColor;
 
+// Buffer that holds the height of every point
+layout(std430, binding = 0) buffer Heights
+{
+	float heights[];
+};
+// Offset between each vertex, required for index calculation
+uniform float offset;
+// Number of vertices in each dimension
+uniform int size;
+
 uniform bool edgeMode;
 uniform mat4 model;
 uniform mat4 view;
@@ -23,7 +33,17 @@ float calculate(float x, float z);
 
 void main()
 {
-	float y = calculate(aPos.x, aPos.z) / scale * verticalScale;
+	// Calculating index from world position
+	// Epsilon required to avoid round-down errors (incorrectly rounding down below the intended value)
+	int cx = int((aPos.x + 1.0) / offset + epsilon);
+	int cz = int((aPos.z + 1.0) / offset + epsilon);
+
+	// Index calculated from the individual indices for x and z
+	int i = int(cx + size * cz);
+
+	float y = heights[i];
+
+
 	gl_Position = projection * view * model * vec4(aPos.x * graphWidth, y, aPos.z * graphWidth, 1.0);
 	if (edgeMode)
 	{

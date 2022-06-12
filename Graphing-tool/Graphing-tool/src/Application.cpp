@@ -60,14 +60,15 @@ int Application::Start()
 	//Shader shader("./src/shaders/vertexShader.shader", "./src/shaders/fragmentShader.shader");
 	Shader shader("src/shaders/vertexShader.shader", "src/shaders/fragmentShader.shader");
 	Shader calculatorShader(function, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader", false);
-	ComputeShader meshGeneratorShader(function, "src/shaders/meshGenerator.shader", false);
+	ComputeShader meshGeneratorShader("src/shaders/meshGenerator.shader");
+	ComputeShader calculatorComputeShader(function, "src/shaders/calculatorComputeShader.shader", false);
 
 	// Creating our vertex array object
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
-	const int size = 500;
+	const unsigned int size = 1200;
 	{
 		// CPU generated vertices
 		std::vector<float> vertices(size * size * 3);
@@ -75,11 +76,11 @@ int Application::Start()
 
 		std::chrono::steady_clock::time_point gpu_begin = std::chrono::steady_clock::now();
 		// With a size of 5000, the GPU generator is almost 10 times as fast!
+		// size=3200 -> t=~280ms
 		generateGridGPU(&meshGeneratorShader, &vertices, &indices, size);
 		std::chrono::steady_clock::time_point gpu_end = std::chrono::steady_clock::now();
 
-		std::cout << "GPU time = " << std::chrono::duration_cast<std::chrono::microseconds>(gpu_end - gpu_begin).count() << "[µs]" << std::endl;
-		std::cout << "GPU time = " << std::chrono::duration_cast<std::chrono::nanoseconds> (gpu_end - gpu_begin).count() << "[ns]" << std::endl;
+		std::cout << "GPU mesh gen. time = " << std::chrono::duration_cast<std::chrono::microseconds>(gpu_end - gpu_begin).count() << " microseconds" << std::endl;
 
 		unsigned int VBO;
 		// Making a buffer with the ID in VBO
@@ -104,6 +105,20 @@ int Application::Start()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
+
+	// Creating a buffer for the heights to go into
+	unsigned int heightsSSBO = 0;
+	glGenBuffers(1, &heightsSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, heightsSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * sizeof(float), 0, GL_DYNAMIC_COPY);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, heightsSSBO);
+
+	calculatorComputeShader.setFloat("offset", 2.0f / (float)(size - 1.0f));
+	calculatorComputeShader.setInt("size", size);
+	calculatorShader.setFloat("offset", 2.0f / (float)(size - 1.0f));
+	calculatorShader.setInt("size", size);
+	calculate(&calculatorComputeShader, size, heightsSSBO);
+
 	unsigned int axesVAO = generateAxesVAO();
 
 
@@ -113,7 +128,7 @@ int Application::Start()
 	float timeSinceGuiSwitch = 10.0f;
 
 	// Custom settings
-	float graphWidth = 1.4f;
+	float graphWidth = 1.0f;
 	float verticalScale = 1.0f;
 	unsigned int guiSwitchKeyPreviousState = 0;
 	bool imGuiEnabled = true;
@@ -242,6 +257,9 @@ int Application::Start()
 		}
 
 		calculatorShader.setInt("calculationMode", calculationMode);
+		//calculatorShader.setDouble("offset", 2.0 / (double)(size - 1.0));
+		calculatorShader.setFloat("offset", 2.0f / (float)(size - 1.0f));
+		calculatorShader.setInt("size", size);
 
 		// Unbinding vertex array
 		glBindVertexArray(0);
@@ -483,7 +501,7 @@ void Application::generateGridGPU(ComputeShader* computeShader, std::vector<floa
 	computeShader->use();
 
 	computeShader->setInt("size", size);
-	computeShader->setFloat("offset", 2.0f / (float)(size - 1));
+	computeShader->setFloat("offset", 2.0f / (float)(size - 1.0f));
 
 	// Creating a buffer for the vertices to go into
 	unsigned int verticesSSBO = 0;
@@ -503,6 +521,7 @@ void Application::generateGridGPU(ComputeShader* computeShader, std::vector<floa
 
 	// Running the compute shader
 	glDispatchCompute(size, size, 1);
+	//glDispatchCompute(std::ceil(float(size / 8.0f)), std::ceil(float(size / 8.0f)), 1);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 	// Reading the data back from the compute shader
@@ -624,4 +643,25 @@ void Application::drawAxes(unsigned int VAO, Shader* shader, Camera* camera)
 	shader->setVector3("color", 19 / 255.0f, 37 / 255.0f, 194 / 255.0f);
 	glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT /* index type */, 0);
 	glBindVertexArray(0);
+}
+
+void Application::calculate(ComputeShader* computeShader, unsigned int size, unsigned int ssbo)
+{
+	// Calculating the heights of each point on the GPU using a compute shader
+
+	// Assigning the compute shader
+	computeShader->use();
+
+	computeShader->setInt("size", size);
+	computeShader->setFloat("offset", 2.0f / (float)(size - 1));
+
+	// Bind to slot 2 (heights)
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssbo);
+
+	// Running the compute shader
+	glDispatchCompute(size, size, 1);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+	// Unbinding the buffer
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }

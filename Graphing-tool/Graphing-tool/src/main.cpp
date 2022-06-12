@@ -19,7 +19,7 @@ const int WIDTH = 1200, HEIGHT = 900;
 
 // The input function (can be modified during runtime)
 std::string function(
-	"x+z"//"sin(x*z)/1.4 + cos((x+z)/2)"
+	"sin(x*z)/1.4 + cos((x+z)/2)"
 );
 
 int main()

@@ -8,7 +8,7 @@ layout(std430, binding = 0) buffer Vertices
 
 layout(std430, binding = 1) buffer Indices
 {
-	int indices[];
+	unsigned int indices[];
 };
 
 uniform int size;
@@ -31,15 +31,20 @@ void main()
 	// Index generation
 	if (cx < size - 1 && cy < size - 1)
 	{
+		// Making sure these calculations get done only once instead of six times
+		int baseIndex = cx + cy * size;
+		unsigned int offsetIndex = i * 6
+			- (i/size)*6; // Compensating for the fact that this index should skip the edges, while these are included in the original index
+
 		// 0 1
 		// 2 3
 		// Right tri: 0 1 3
-		indices[i * 6 + 0] = cx + cy * size; // 0
-		indices[i * 6 + 1] = cx + cy * size + 1; // 1
-		indices[i * 6 + 2] = cx + cy * size + size + 1; // 3
+		indices[offsetIndex + 0] = baseIndex; // 0
+		indices[offsetIndex + 1] = baseIndex + 1; // 1
+		indices[offsetIndex + 2] = baseIndex + size + 1; // 3
 		// Left tri: 0 3 2	 ]
-		indices[i * 6 + 3] = cx + cy * size; // 0
-		indices[i * 6 + 4] = cx + cy * size + size + 1; // 3
-		indices[i * 6 + 5] = cx + cy * size + size; // 2
+		indices[offsetIndex + 3] = baseIndex; // 0
+		indices[offsetIndex + 4] = baseIndex + size + 1; // 3
+		indices[offsetIndex + 5] = baseIndex + size; // 2
 	}
 }
