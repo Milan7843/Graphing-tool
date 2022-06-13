@@ -11,6 +11,11 @@ uniform float offset;
 uniform float scale;
 uniform float graphWidth;
 
+// Constants
+#define pi 3.14159265359
+#define e 2.71828182846
+#define epsilon 0.001
+
 void main()
 {
 	// Calculating the 2 dimensional indices
@@ -25,5 +30,6 @@ void main()
 	int i = int(cx + size * cz);
 
 	// Assigning the value
-	heights[i] = float($function) / scale;
+	float height = float($function) / scale;
+	heights[i] = height;
 }
