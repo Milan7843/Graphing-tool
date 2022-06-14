@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "Shader.h"
+#include "ComputeShader.h"
 #include "Camera.h"
 #include "Callbacks.h"
 #include "Interpreter.h"
@@ -56,26 +57,52 @@ private:
 	float deltaTime = 0.0f;	// Time between current frame and last frame
 	float lastFrame = 0.0f; // Time of last frame
 
+	float graphWidth = 1.0f;
+	float generatedGraphWidth = 0.0f; // Holds the old value of graphWidth if it changes
 	float scale = 3.0f;
+	float generatedScale = 0.0f; // Holds the old value of scale if it changes
+	unsigned int size = 400;
 
-	// Initialises and configures GLFW
+	// Buffers for the mesh data
+	unsigned int VAO = 0;
+	unsigned int VBO = 0;
+	unsigned int EBO = 0;
+	// Mesh data buffers
+	unsigned int heightsSSBO = 0;
+	unsigned int verticesSSBO = 0;
+	unsigned int indicesSSBO = 0;
+
+	// Initialise and configure GLFW
 	void initialiseGLFW();
 
-	// Creates a window using GLFW
+	// Create a window using GLFW
 	GLFWwindow* createGLFWWindow(int width, int height, const char* name);
 
-	// Initialises GLAD
+	// Initialise GLAD
 	bool initialiseGLAD();
 
-	// Draws the axes
+	// Draw the axes
 	void drawAxes(unsigned int VAO, Shader* shader, Camera* camera);
 
-	// Generates a VAO for the axes
+
+	// Calculate the actual graph data using the input function
+	// Returns whether the data was updated
+	bool calculate(ComputeShader* computeShader, unsigned int ssbo, bool forceRun);
+
+
+
+
+
+	// Generate the grid mesh with the given compute shader
+	void generateGridMesh(ComputeShader* generatorComputeShader, ComputeShader* calculatorComputeShader);
+
+	// Generate a VAO for the axes
 	unsigned int generateAxesVAO();
 
-	// Modifies the input array such that it is a grid
-	void generateGrid(std::vector<float>* vertices, int x, int y);
+	// Modify the input array such that it is a grid
+	void generateGrid(std::vector<float>* vertices, int size);
 	void generateGridIndices(std::vector<unsigned int>* indices, int x, int y);
+	void generateGridGPU(ComputeShader* computeShader, std::vector<float>* vertices, std::vector<unsigned int>* indices, int size);
 };
 
 #endif

@@ -145,6 +145,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="include\glad\glad.c" />
+    <ClCompile Include="src\AbstractShader.cpp" />
+    <ClCompile Include="src\ComputeShader.cpp" />
     <ClCompile Include="include\imgui\imgui.cpp" />
     <ClCompile Include="include\imgui\imgui_demo.cpp" />
     <ClCompile Include="include\imgui\imgui_draw.cpp" />
@@ -163,6 +166,8 @@
     <ClCompile Include="src\Callbacks.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\AbstractShader.h" />
+    <ClInclude Include="src\ComputeShader.h" />
     <ClInclude Include="include\glad\glad.h" />
     <ClInclude Include="include\GLFW\glfw3.h" />
     <ClInclude Include="include\GLFW\glfw3native.h" />
@@ -603,9 +608,11 @@
     <None Include="include\glm\gtx\vector_angle.inl" />
     <None Include="include\glm\gtx\vector_query.inl" />
     <None Include="include\glm\gtx\wrap.inl" />
+    <None Include="src\shaders\calculatorComputeShader.shader" />
     <None Include="src\shaders\calculatorFragmentShader.shader" />
     <None Include="src\shaders\calculatorVertexShader.shader" />
     <None Include="src\shaders\fragmentShader.shader" />
+    <None Include="src\shaders\meshGenerator.shader" />
     <None Include="src\shaders\vertexShader.shader" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
