@@ -1,5 +1,6 @@
 #include "Application.h"
 #include <chrono>         // std::chrono::seconds
+#include <thread>         // std::this_thread::sleep_for
 
 Application::Application(const int width, const int height, std::string function)
 	: WIDTH(width), HEIGHT(height),
@@ -38,7 +39,7 @@ int Application::Start()
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
-	// Setup Dear ImGui style
+	// Setup Dear ImGui style to be dark
 	ImGui::StyleColorsDark();
 
 	// Setup Platform/Renderer backends
@@ -48,6 +49,7 @@ int Application::Start()
 	// Initialising GLAD
 	if (!initialiseGLAD()) return -1;
 
+	// Creating a window and making things be rendered in correct order
 	glViewport(0, 0, WIDTH, HEIGHT);
 	glEnable(GL_DEPTH_TEST);
 
@@ -55,38 +57,20 @@ int Application::Start()
 	Callbacks& callbacks = Callbacks::getInstance();
 	callbacks.setCamera(&camera);
 
+	// Callback for window size changed
 	glfwSetFramebufferSizeCallback(window, &Callbacks::framebuffer_size_callback);
 	
+	// Importing and compiling the shaders
 	//Shader shader("./src/shaders/vertexShader.shader", "./src/shaders/fragmentShader.shader");
 	Shader shader("src/shaders/vertexShader.shader", "src/shaders/fragmentShader.shader");
 	Shader calculatorShader(function, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader", false);
 	ComputeShader meshGeneratorShader("src/shaders/meshGenerator.shader");
 	ComputeShader calculatorComputeShader(function, "src/shaders/calculatorComputeShader.shader", false);
 
-	// Creating our vertex array object
-	unsigned int VAO;
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
+	// Creating our mesh
+	generateGridMesh(&meshGeneratorShader, &calculatorComputeShader);
 
-	generateGridMesh(&meshGeneratorShader);
-
-	// Telling OpenGL how to interpret the data (only position data for now)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-
-	// Creating a buffer for the heights to go into
-	unsigned int heightsSSBO = 0;
-	glGenBuffers(1, &heightsSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, heightsSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * sizeof(float), 0, GL_DYNAMIC_COPY);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, heightsSSBO);
-
-	calculatorShader.setFloat("offset", 2.0f / (float)(size - 1.0f));
-	calculatorShader.setInt("size", size);
-
-	calculate(&calculatorComputeShader, heightsSSBO);
-
+	// Creating a VAO for the axes
 	unsigned int axesVAO = generateAxesVAO();
 
 
@@ -95,18 +79,21 @@ int Application::Start()
 
 	float timeSinceGuiSwitch = 10.0f;
 
+	int detailLevel = 1;
+	int previousDetailLevel = 1;
+	int details[4] = { 100, 400, 900, 1600 };
+
 	// Custom settings
 	float verticalScale = 1.0f;
 	unsigned int guiSwitchKeyPreviousState = 0;
 	bool imGuiEnabled = true;
-	bool showAdditionalInfo = false;
 
 	// View modes
 	bool smoothMesh = false;
 	bool wireframe = false;
-
-	// Calculation mode
-	int calculationMode = 0;
+	
+	bool autoUpdate = true;
+	bool updateMesh = false;
 
 	// Function input error log
 	bool functionError = false;
@@ -118,7 +105,6 @@ int Application::Start()
 	ImVec4 upperColor(0.0f, 0.0f, 1.0f, 1.0f);
 	ImVec4 lowerColor(1.0f, 0.0f, 0.0f, 1.0f);
 
-
 	// Render loop: runs while the window does not close
 	while (!glfwWindowShouldClose(window))
 	{
@@ -126,7 +112,10 @@ int Application::Start()
 		glfwPollEvents();
 
 		// Calculating the heights (does not run if no important variables changed)
-		calculate(&calculatorComputeShader, heightsSSBO);
+		bool updatedData = false;
+		if (autoUpdate) { 
+			updatedData = calculate(&calculatorComputeShader, heightsSSBO, false);
+		}
 
 		// Only move the camera if the GUI is not enabled
 		if (!imGuiEnabled)
@@ -184,7 +173,7 @@ int Application::Start()
 		// Setting uniforms
 		float time = glfwGetTime();
 
-		calculatorShader.setFloat("graphWidth", graphWidth);
+		calculatorShader.setFloat("graphWidth", generatedGraphWidth);
 		calculatorShader.setFloat("verticalScale", verticalScale);
 		calculatorShader.setVector3("upperColor", imGuiVec4ToGlmVec3(upperColor));
 		calculatorShader.setVector3("lowerColor", imGuiVec4ToGlmVec3(lowerColor));
@@ -225,8 +214,6 @@ int Application::Start()
 			glDrawElements(GL_TRIANGLES, (size - 1) * (size - 1) * 6, GL_UNSIGNED_INT /* index type */, 0);
 		}
 
-		calculatorShader.setInt("calculationMode", calculationMode);
-		//calculatorShader.setDouble("offset", 2.0 / (double)(size - 1.0));
 		calculatorShader.setFloat("offset", 2.0f / (float)(size - 1.0f));
 		calculatorShader.setInt("size", size);
 
@@ -253,8 +240,10 @@ int Application::Start()
 			{
 				try
 				{
-					Shader _calculatorShader(functionInput, "src/shaders/calculatorVertexShader.shader", "src/shaders/calculatorFragmentShader.shader", true);
-					calculatorShader = _calculatorShader;
+					// Re-compiling calculator shader with new function
+					ComputeShader _calculatorComputeShader(functionInput, "src/shaders/calculatorComputeShader.shader", false);
+					calculatorComputeShader = _calculatorComputeShader;
+					updatedData = calculate(&calculatorComputeShader, heightsSSBO, true);
 				}
 				catch (std::exception e)
 				{
@@ -270,7 +259,7 @@ int Application::Start()
 				// Generic error message
 				ImGui::TextColored(ImVec4(0.8f, 0.15f, 0.15f, 1.0f), "Function error!");
 
-				// Showing more info
+				// Showing more error info (from error.what())
 				if (ImGui::CollapsingHeader("Additional error information"))
 				{
 					ImGui::Text(functionErrorMessage.c_str());
@@ -292,7 +281,7 @@ int Application::Start()
 				ImGui::BulletText("acos(x)   -> arccosine of x");
 				ImGui::BulletText("atan(x)   -> arctangent of x");
 				ImGui::BulletText("exp(x)    -> e to the power x");
-				ImGui::BulletText("pow(x, z) -> x to the power z");
+				ImGui::BulletText("pow(x, z) -> x to the power z \n(doesn't support negative base)");
 				ImGui::BulletText("sqrt(x)   -> square root of x");
 				ImGui::BulletText("abs(x)    -> absolute value of x");
 				ImGui::BulletText("floor(x)  -> floor of x (round down)");
@@ -337,17 +326,36 @@ int Application::Start()
 				wireframe = !wireframe;
 			}
 
-
-			// Additional information
-			if (showAdditionalInfo)
+			// Detail level
+			ImGui::Text("Quality");
+			ImGui::RadioButton("Low", &detailLevel, 0); ImGui::SameLine();
+			ImGui::RadioButton("Medium", &detailLevel, 1); ImGui::SameLine();
+			ImGui::RadioButton("High", &detailLevel, 2); ImGui::SameLine();
+			ImGui::RadioButton("Ultra", &detailLevel, 3);
+			if (detailLevel != previousDetailLevel)
 			{
-				if (ImGui::Button("Hide additional information"))
-				{
-					showAdditionalInfo = false;
-				}
+				// Setting the new size according to the new detail level
+				previousDetailLevel = detailLevel;
+				size = details[detailLevel];
 
+				// Re-generating the mesh
+				//updateMesh = true;
+				generateGridMesh(&meshGeneratorShader, &calculatorComputeShader);
+			}
+
+			// Show checkbox and optionally button for automatic updating of graph data
+			ImGui::Checkbox("Automatically update graph data on variable change", &autoUpdate);
+			if (!autoUpdate && ImGui::Button("Update graph data"))
+			{
+				updatedData = calculate(&calculatorComputeShader, heightsSSBO, false);
+			}
+
+
+			// Button to show additional information (camera position/rotation and more)
+			if (ImGui::CollapsingHeader("Additional information"))
+			{
 				// Graph bounds
-				std::string bounds = std::to_string(scale * graphWidth);
+				std::string bounds = std::to_string(generatedScale * generatedGraphWidth);
 				std::string boundsInfo = "Current bounds:\nx: [-" + bounds + ", " + bounds + "], z: [-" + bounds + ", " + bounds + "]";
 				ImGui::Text(boundsInfo.c_str());
 
@@ -362,20 +370,18 @@ int Application::Start()
 				std::string cameraRotation = "Camera pitch: "
 					+ std::to_string(camera.getPitch()) + ", yaw: " + std::to_string(camera.getYaw());
 				ImGui::Text(cameraRotation.c_str());
-			}
-			else
-			{
-				// Button to show additionial information (camera position/rotation and more)
-				if (ImGui::Button("Show additional information"))
-				{
-					showAdditionalInfo = true;
-				}
-			}
 
-			ImGui::Text("Calculation mode");
-			ImGui::RadioButton("Regular", &calculationMode, 0);
-			ImGui::RadioButton("Derivative", &calculationMode, 1);
-			//ImGui::RadioButton("Integral", &calculationMode, 2);
+				// Whether the data was updated in the current frame
+				if (updatedData)
+				{
+					ImGui::Text("Data was updated");
+				}
+				else
+				{
+					ImGui::Text("Data not being updated");
+				}
+				ImGui::Text(("FPS: " + std::to_string(1.0f/deltaTime)).c_str());
+			}
 
 			// Camera settings (speed, fov etc.)
 			if (ImGui::CollapsingHeader("Camera settings"))
@@ -413,6 +419,14 @@ int Application::Start()
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 
+	// Deleting all assigned buffers
+	glDeleteBuffers(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
+	glDeleteBuffers(1, &heightsSSBO);
+	glDeleteBuffers(1, &verticesSSBO);
+	glDeleteBuffers(1, &indicesSSBO);
+
 	// Terminating GLFW
 	glfwTerminate();
 	return 0;
@@ -427,7 +441,7 @@ void Application::initialiseGLFW()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	// OpenGL profile: core
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
 void Application::generateGrid(std::vector<float>* vertices, int size)
@@ -472,15 +486,17 @@ void Application::generateGridGPU(ComputeShader* computeShader, std::vector<floa
 	computeShader->setInt("size", size);
 	computeShader->setFloat("offset", 2.0f / (float)(size - 1.0f));
 
-	// Creating a buffer for the vertices to go into
-	unsigned int verticesSSBO = 0;
-	glGenBuffers(1, &verticesSSBO);
+	// Creating a buffer for the vertices to go into, but not if it already exists
+	if (verticesSSBO == 0)
+		glGenBuffers(1, &verticesSSBO);
+	// Writing all zeroes into the vertex buffer
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, verticesSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * 3 * sizeof(float), 0, GL_DYNAMIC_COPY);
 
-	// Creating a buffer for the indices to go into
-	unsigned int indicesSSBO = 0;
-	glGenBuffers(1, &indicesSSBO);
+	// Creating a buffer for the indices to go into, but not if it already exists
+	if (indicesSSBO == 0)
+		glGenBuffers(1, &indicesSSBO);
+	// Writing all zeroes into the index buffer
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, indicesSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, (size - 1) * (size - 1) * 6 * sizeof(unsigned int), 0, GL_DYNAMIC_COPY);
 
@@ -496,6 +512,7 @@ void Application::generateGridGPU(ComputeShader* computeShader, std::vector<floa
 	// Reading the data back from the compute shader
 	glGetNamedBufferSubData(verticesSSBO, 0, size * size * 3 * sizeof(float), vertices->data());
 	glGetNamedBufferSubData(indicesSSBO, 0, (size - 1) * (size - 1) * 6 * sizeof(unsigned int), indices->data());
+
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
@@ -545,7 +562,7 @@ unsigned int Application::generateAxesVAO()
 		0, 1
 	};
 
-	unsigned int VBO;
+	unsigned int VBO = 0;
 	// Making a buffer with the ID in VBO
 	glGenBuffers(1, &VBO);
 	// Binding our new buffer to the GL_ARRAY_BUFFER target
@@ -553,8 +570,7 @@ unsigned int Application::generateAxesVAO()
 	// Binding our custom data into the buffer
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// Binding the element buffer object
-	unsigned int EBO;
+	unsigned int EBO = 0;
 	// Generating a buffer for the EBO
 	glGenBuffers(1, &EBO);
 	// Binding the EBO
@@ -614,19 +630,18 @@ void Application::drawAxes(unsigned int VAO, Shader* shader, Camera* camera)
 	glBindVertexArray(0);
 }
 
-void Application::calculate(ComputeShader* computeShader, unsigned int ssbo)
+bool Application::calculate(ComputeShader* computeShader, unsigned int ssbo, bool forceRun)
 {
 	// Calculating the heights of each point on the GPU using a compute shader
 
 	// Setting the changed variables
-	if (graphWidth == generatedGraphWidth &&
-		scale == generatedScale)
+	if ((graphWidth == generatedGraphWidth &&
+		scale == generatedScale) && !forceRun)
 	{
 		// No important changed variables: do not run
-		std::cout << "Not running calculation" << std::endl;
-		return;
+		return false;
 	}
-	std::cout << "Running calculation" << std::endl;
+	// Updating the old variables
 	generatedGraphWidth = graphWidth;
 	generatedScale = scale;
 
@@ -647,36 +662,67 @@ void Application::calculate(ComputeShader* computeShader, unsigned int ssbo)
 
 	// Unbinding the buffer
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	// Updated graph data: return true
+	return true;
 }
 
-void Application::generateGridMesh(ComputeShader* generatorComputeShader)
+void Application::generateGridMesh(ComputeShader* generatorComputeShader, 
+	ComputeShader* calculatorComputeShader)
 {
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+	
 	// CPU generated vertices
 	std::vector<float> vertices(size * size * 3);
 	std::vector<unsigned int> indices((size - 1) * (size - 1) * 6);
-
+	
 	std::chrono::steady_clock::time_point gpu_begin = std::chrono::steady_clock::now();
 	// With a size of 5000, the GPU generator is almost 10 times as fast!
 	// size=3200 -> t=~280ms
 	generateGridGPU(generatorComputeShader, &vertices, &indices, size);
+	//generateGridGPU(generatorComputeShader, &vertices, &indices, size);
 	std::chrono::steady_clock::time_point gpu_end = std::chrono::steady_clock::now();
-
+	
 	std::cout << "GPU mesh gen. time = " << std::chrono::duration_cast<std::chrono::microseconds>(gpu_end - gpu_begin).count() << " microseconds" << std::endl;
 
-	unsigned int VBO;
-	// Making a buffer with the ID in VBO
-	glGenBuffers(1, &VBO);
+	// Don't regenerate VBO
+	if (VBO == 0)
+	{
+		// Making a buffer with the ID in VBO
+		glGenBuffers(1, &VBO);
+	}
 	// Binding our new buffer to the GL_ARRAY_BUFFER target
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	// Binding our custom data into the buffer
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
 
-	// Binding the element buffer object
-	unsigned int EBO;
-	// Generating a buffer for the EBO
-	glGenBuffers(1, &EBO);
+	// Don't regenerate EBO
+	if (EBO == 0)
+	{
+		// Generating a buffer for the EBO
+		glGenBuffers(1, &EBO);
+	}
 	// Binding the EBO
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	// Inserting data into the buffer
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+	
+	// Telling OpenGL how to interpret the data (only position data for now)
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Creating a buffer for the heights to go into
+	if (heightsSSBO == 0)
+	{
+		glGenBuffers(1, &heightsSSBO);
+	}
+	// We have to recalculate heights on change of size, as the height data is totally redundant at that point
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, heightsSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * sizeof(float), 0, GL_DYNAMIC_COPY);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, heightsSSBO);
+	calculate(calculatorComputeShader, heightsSSBO, true);
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
 }
