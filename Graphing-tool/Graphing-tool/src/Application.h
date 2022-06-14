@@ -61,7 +61,7 @@ private:
 	float generatedGraphWidth = 0.0f; // Holds the old value of graphWidth if it changes
 	float scale = 3.0f;
 	float generatedScale = 0.0f; // Holds the old value of scale if it changes
-	unsigned int size = 11;
+	unsigned int size = 400;
 
 	// Buffers for the mesh data
 	unsigned int VAO = 0;
@@ -84,9 +84,10 @@ private:
 	// Draw the axes
 	void drawAxes(unsigned int VAO, Shader* shader, Camera* camera);
 
+
 	// Calculate the actual graph data using the input function
 	// Returns whether the data was updated
-	bool calculate(ComputeShader* computeShader, unsigned int ssbo);
+	bool calculate(ComputeShader* computeShader, unsigned int ssbo, bool forceRun);
 
 
 
