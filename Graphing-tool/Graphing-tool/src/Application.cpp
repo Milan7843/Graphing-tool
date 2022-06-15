@@ -72,6 +72,7 @@ int Application::Start()
 
 	// Will handle user variables
 	VariableHandler variableHandler;
+	FunctionHistory functionHistory;
 
 	// Creating a VAO for the axes
 	unsigned int axesVAO = generateAxesVAO();
@@ -80,6 +81,8 @@ int Application::Start()
 	// ImGui state
 	std::string functionInput{ function };
 	variableHandler.setFunction(functionInput);
+	functionHistory.actualFunction = &functionInput;
+	functionHistory.addFunction(functionInput);
 
 	float timeSinceGuiSwitch = 10.0f;
 
@@ -249,12 +252,23 @@ int Application::Start()
 				try
 				{
 					// Re-compiling calculator shader with new function
-					ComputeShader _calculatorComputeShader(functionInput, "src/shaders/calculatorComputeShader.shader", false);
+					ComputeShader _calculatorComputeShader(functionInput, "src/shaders/calculatorComputeShader.shader", true);
 					calculatorComputeShader = _calculatorComputeShader;
+
 					// Setting the user variables
 					variableHandler.setVariables(&calculatorComputeShader);
+
+					// Re-calculating the height data
 					updatedData = calculate(&calculatorComputeShader, heightsSSBO, true);
+
+					// Variable handler needs to knwo what variables are in the new function
 					variableHandler.setFunction(functionInput);
+
+					// Add this new function to the history of used functions
+					functionHistory.addFunction(functionInput);
+
+					// Removing any previous errors if this function works
+					functionError = false;
 				}
 				catch (std::exception e)
 				{
@@ -262,6 +276,11 @@ int Application::Start()
 					// Convert to string in order to preserve it
 					functionErrorMessage = std::string(e.what());
 				}
+			}
+			// Shows some of the previous functions
+			if (ImGui::CollapsingHeader("Previous functions"))
+			{
+				functionHistory.drawHistory();
 			}
 
 			// Function error

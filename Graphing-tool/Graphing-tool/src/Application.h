@@ -19,6 +19,7 @@
 #include "Callbacks.h"
 #include "Interpreter.h"
 #include "VariableHandler.h"
+#include "FunctionHistory.h"
 
 // ImGui
 #include "imgui/imgui.h"

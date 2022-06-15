@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\FunctionHistory.cpp" />
     <ClCompile Include="include\glad\glad.c" />
     <ClCompile Include="src\AbstractShader.cpp" />
     <ClCompile Include="src\ComputeShader.cpp" />
@@ -167,6 +168,7 @@
     <ClCompile Include="src\VariableHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\FunctionHistory.h" />
     <ClInclude Include="src\AbstractShader.h" />
     <ClInclude Include="src\ComputeShader.h" />
     <ClInclude Include="include\glad\glad.h" />
