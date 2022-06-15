@@ -70,12 +70,16 @@ int Application::Start()
 	// Creating our mesh
 	generateGridMesh(&meshGeneratorShader, &calculatorComputeShader);
 
+	// Will handle user variables
+	VariableHandler variableHandler;
+
 	// Creating a VAO for the axes
 	unsigned int axesVAO = generateAxesVAO();
 
 
 	// ImGui state
 	std::string functionInput{ function };
+	variableHandler.setFunction(functionInput);
 
 	float timeSinceGuiSwitch = 10.0f;
 
@@ -108,14 +112,22 @@ int Application::Start()
 	// Render loop: runs while the window does not close
 	while (!glfwWindowShouldClose(window))
 	{
+		float currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
 		// Checking for event input
 		glfwPollEvents();
 
 		// Calculating the heights (does not run if no important variables changed)
 		bool updatedData = false;
-		if (autoUpdate) { 
-			updatedData = calculate(&calculatorComputeShader, heightsSSBO, false);
+		if (autoUpdate) {
+			// Setting the user variables
+			variableHandler.setVariables(&calculatorComputeShader);
+			// Only force update if a variable has changed
+			updatedData = calculate(&calculatorComputeShader, heightsSSBO, variableHandler.variableChanged());
 		}
+
 
 		// Only move the camera if the GUI is not enabled
 		if (!imGuiEnabled)
@@ -127,17 +139,13 @@ int Application::Start()
 			// Also input handling
 			camera.processInput(window, deltaTime);
 		}
-		
-		float currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
 
 		// Always check for window close on escape
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, true);
 
 		// Enable/disable the ImGui GUI on key switch
-		if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && guiSwitchKeyPreviousState == GLFW_RELEASE)
+		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && guiSwitchKeyPreviousState == GLFW_RELEASE)
 		{
 			imGuiEnabled = !imGuiEnabled;
 
@@ -156,7 +164,7 @@ int Application::Start()
 				camera.resetMouseOffset();
 			}
 		}
-		guiSwitchKeyPreviousState = glfwGetKey(window, GLFW_KEY_F);
+		guiSwitchKeyPreviousState = glfwGetKey(window, GLFW_KEY_R);
 		
 		/* RENDERING */
 		
@@ -233,7 +241,7 @@ int Application::Start()
 		{		
 			ImGui::Begin("Graphing settings");
 		
-			ImGui::Text("Press F to return to graph view, \nwhere you can look around.");
+			ImGui::Text("Press R to return to graph view, \nwhere you can look around.");
 
 			ImGui::InputText("Function", &functionInput);
 			if (ImGui::Button("Set function"))
@@ -243,7 +251,10 @@ int Application::Start()
 					// Re-compiling calculator shader with new function
 					ComputeShader _calculatorComputeShader(functionInput, "src/shaders/calculatorComputeShader.shader", false);
 					calculatorComputeShader = _calculatorComputeShader;
+					// Setting the user variables
+					variableHandler.setVariables(&calculatorComputeShader);
 					updatedData = calculate(&calculatorComputeShader, heightsSSBO, true);
+					variableHandler.setFunction(functionInput);
 				}
 				catch (std::exception e)
 				{
@@ -301,16 +312,19 @@ int Application::Start()
 
 				ImGui::Text("Available constants:");
 				ImGui::BulletText("pi");
-				ImGui::BulletText("e");
 
 				ImGui::Separator();
 
-				ImGui::Text("Use variables x and z for inputs.");
-				ImGui::Text("x is represented by the red axis, z by the blue axis.");
-				ImGui::Text("All trigonometric functions \ntake radians as input/output.");
+				ImGui::BulletText("Use variables x and z for inputs.");
+				ImGui::BulletText("Use letters 'a' to 'f' to denote user variables.\nWhen you include any of these in your function,\nthey will show up above.\nThen click and drag the variable value to change it.");
+				ImGui::BulletText("x is represented by the red axis, z by the blue axis.");
+				ImGui::BulletText("All trigonometric functions \ntake radians as input/output.");
 
 				ImGui::Separator();
 			}
+			variableHandler.drawVariableList();
+
+			ImGui::Separator();
 
 			// Graph settings
 			ImGui::SliderFloat("Scale", &scale, 0.1f, 10.0f);
@@ -347,9 +361,13 @@ int Application::Start()
 			ImGui::Checkbox("Automatically update graph data on variable change", &autoUpdate);
 			if (!autoUpdate && ImGui::Button("Update graph data"))
 			{
-				updatedData = calculate(&calculatorComputeShader, heightsSSBO, false);
+				// Setting the user variables
+				variableHandler.setVariables(&calculatorComputeShader);
+				// Always force update, as variable changes can only be detected on the frame they occur
+				updatedData = calculate(&calculatorComputeShader, heightsSSBO, true);
 			}
 
+			ImGui::Separator();
 
 			// Button to show additional information (camera position/rotation and more)
 			if (ImGui::CollapsingHeader("Additional information"))
@@ -641,6 +659,9 @@ bool Application::calculate(ComputeShader* computeShader, unsigned int ssbo, boo
 		// No important changed variables: do not run
 		return false;
 	}
+
+	std::cout << "calculating" << std::endl;
+
 	// Updating the old variables
 	generatedGraphWidth = graphWidth;
 	generatedScale = scale;
@@ -652,6 +673,10 @@ bool Application::calculate(ComputeShader* computeShader, unsigned int ssbo, boo
 	computeShader->setFloat("graphWidth", graphWidth);
 	computeShader->setInt("size", size);
 	computeShader->setFloat("offset", 2.0f / (float)(size - 1));
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * sizeof(float), 0, GL_DYNAMIC_COPY);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssbo);
 
 	// Bind to slot 2 (heights)
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssbo);
@@ -718,9 +743,6 @@ void Application::generateGridMesh(ComputeShader* generatorComputeShader,
 		glGenBuffers(1, &heightsSSBO);
 	}
 	// We have to recalculate heights on change of size, as the height data is totally redundant at that point
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, heightsSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, size * size * sizeof(float), 0, GL_DYNAMIC_COPY);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, heightsSSBO);
 	calculate(calculatorComputeShader, heightsSSBO, true);
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);

@@ -11,9 +11,18 @@ uniform float offset;
 uniform float scale;
 uniform float graphWidth;
 
+// User variables
+uniform float a;
+uniform float b;
+uniform float c;
+uniform float d;
+uniform float e;
+uniform float f;
+
+
 // Constants
 #define pi 3.14159265359
-#define e 2.71828182846
+//#define e 2.71828182846
 #define epsilon 0.001
 
 void main()

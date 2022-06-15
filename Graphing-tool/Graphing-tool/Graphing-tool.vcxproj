@@ -164,6 +164,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\Callbacks.cpp" />
+    <ClCompile Include="src\VariableHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\AbstractShader.h" />
@@ -470,6 +471,7 @@
     <ClInclude Include="src\Interpreter.h" />
     <ClInclude Include="src\Shader.h" />
     <ClInclude Include="src\stb_image.h" />
+    <ClInclude Include="src\VariableHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="include\glm\detail\func_common.inl" />

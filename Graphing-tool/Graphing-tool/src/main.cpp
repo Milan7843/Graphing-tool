@@ -10,7 +10,7 @@
  - D to move right
  - E to move up
  - Q to move down
- - F to enable/disable settings and info menu
+ - R to enable/disable settings and info menu
  - Mouse to look around
 */
 
@@ -19,7 +19,7 @@ const int WIDTH = 1200, HEIGHT = 900;
 
 // The input function (can be modified during runtime)
 std::string function(
-	"sin(x*z)/1.4 + cos((x+z)/2)"
+	"sin(x*z)/1.4 + cos((x+z)/2)*a+b"
 );
 
 int main()
