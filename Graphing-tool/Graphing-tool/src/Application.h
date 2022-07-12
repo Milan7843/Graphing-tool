@@ -17,7 +17,6 @@
 #include "ComputeShader.h"
 #include "Camera.h"
 #include "Callbacks.h"
-#include "Interpreter.h"
 #include "VariableHandler.h"
 
 // ImGui

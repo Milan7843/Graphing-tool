@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>I:\Graphing-tool\Graphing-tool\x64\Release\Graphing-tool.exe</FullPath>
+      <FullPath>C:\Git\Graphing-tool\Graphing-tool\x64\Release\Graphing-tool.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

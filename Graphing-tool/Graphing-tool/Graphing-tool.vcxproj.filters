@@ -60,9 +60,6 @@
     <ClCompile Include="include\imgui\imgui_stdlib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Interpreter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ComputeShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -978,9 +975,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\imgui\imgui_stdlib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Interpreter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ComputeShader.h">
